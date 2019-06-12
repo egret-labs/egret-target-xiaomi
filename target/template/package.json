@@ -1,0 +1,18 @@
+{
+    "name": "projectName",
+    "version": "1.0.0",
+    "scripts": {
+        "build": "quickgame build",
+        "release": "quickgame release",
+        "server": "quickgame server",
+        "debug": "quickgame debug"
+    },
+    "dependencies": {
+        "quickgame-cli": "^0.1.9"
+    },
+    "babel": {
+        "plugins": [
+            "babel-plugin-transform-remove-strict-mode"
+        ]
+    }
+}
