@@ -38,7 +38,7 @@
 		"src/WebGLRenderer.ts",
 		"src/WebSysImpl.ts",
 		"src/EgretWebGLAttribute.ts",
-		"src/EgretWebGLProgram.ts",
+		"src/org/EgretWebGLProgram.ts",
 		"src/EgretWebGLUniform.ts",
 		"src/org/WebGLRenderContext.ts",
 		"src/org/EgretShaderLib.ts",
