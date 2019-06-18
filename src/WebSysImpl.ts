@@ -137,6 +137,8 @@ namespace egret.qgame {
         return size;
     }
     egret.sys.drawTextureElements = drawTextureElements;
+
+    egret.Geolocation = egret.qgame.WebGeolocation;
 }
 
 // window["sharedCanvas"].isCanvas = true;
