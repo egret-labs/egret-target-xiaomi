@@ -138,6 +138,16 @@ namespace egret.qgame {
     }
     egret.sys.drawTextureElements = drawTextureElements;
 
+    /**
+     * 测量文本的宽度
+     * @param context 
+     * @param text 
+     */
+    function measureTextWith(context: CanvasRenderingContext2D, text: string): number {
+        return context.measureText(text).width;
+    }
+    egret.sys.measureTextWith = measureTextWith;
+    
     egret.Geolocation = egret.qgame.WebGeolocation;
     egret.Motion = egret.qgame.WebMotion;
 }
