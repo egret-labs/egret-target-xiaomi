@@ -139,6 +139,7 @@ namespace egret.qgame {
     egret.sys.drawTextureElements = drawTextureElements;
 
     egret.Geolocation = egret.qgame.WebGeolocation;
+    egret.Motion = egret.qgame.WebMotion;
 }
 
 // window["sharedCanvas"].isCanvas = true;
