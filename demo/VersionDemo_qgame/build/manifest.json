@@ -1,9 +1,0 @@
-{
-  "package": "com.application.demo",
-  "name": "quickgame",
-  "versionName": "1.0.0",
-  "versionCode": "1",
-  "minPlatformVersion": "101",
-  "icon": "/Common/logo.png",
-  "orientation": "portrait"
-}
