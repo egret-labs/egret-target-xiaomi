@@ -134,12 +134,7 @@ namespace egret.qgame {
      */
     function parse(text: string): XML {
         if (!parser) {
-            if (!window["DOMParser"]) {
-                console.error("没有 XML 支持库，请访问 http://developer.egret.com/cn/github/egret-docs/Engine2D/minigame/minigameFAQ/index.html#xml 了解详情");
-            }
-            else {
-                parser = new DOMParser();
-            }
+            parser = egret.sys.getDOMParser();
         }
         let xmlDoc = parser.parseFromString(text, "text/xml");
         let length = xmlDoc.childNodes.length;
