@@ -582,7 +582,7 @@ r.prototype = e.prototype, t.prototype = new r();
                     WebAudioDecode.isDecoding = false;
                     WebAudioDecode.decodeAudios();
                 }, function () {
-                    egret.sys.printWebAudioDecodeError("");
+                    alert("sound decode error: " + decodeInfo["url"] + "！\nsee http://edn.egret.com/cn/docs/page/156");
                     if (decodeInfo["fail"]) {
                         decodeInfo["fail"]();
                     }
@@ -640,7 +640,28 @@ r.prototype = e.prototype, t.prototype = new r();
                 if (true && !url) {
                     egret.$error(3002);
                 }
-                egret.sys.loadWebAudioSound(self, url, onAudioLoaded, onAudioError);
+                var request = new XMLHttpRequest();
+                request.open("GET", url, true);
+                request.responseType = "arraybuffer";
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4) {
+                        var ioError = (request.status >= 400 || request.status == 0);
+                        if (ioError) {
+                            self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
+                        }
+                        else {
+                            WebAudioDecode.decodeArr.push({
+                                "buffer": request.response,
+                                "success": onAudioLoaded,
+                                "fail": onAudioError,
+                                "self": self,
+                                "url": self.url
+                            });
+                            WebAudioDecode.decodeAudios();
+                        }
+                    }
+                };
+                request.send();
                 function onAudioLoaded() {
                     self.loaded = true;
                     self.dispatchEventWith(egret.Event.COMPLETE);
@@ -6198,47 +6219,6 @@ if (window['HTMLVideoElement'] == undefined) {
             canvasRenderBuffer.clear();
         }
         egret.sys.resizeCanvasRenderBuffer = resizeCanvasRenderBuffer;
-        /**
-         * sys.printWebAudioDecodeError
-         * @param url
-         */
-        function printWebAudioDecodeError(url) {
-            alert("sound decode error: " + url + "！\nsee http://edn.egret.com/cn/docs/page/156");
-        }
-        egret.sys.printWebAudioDecodeError = printWebAudioDecodeError;
-        /**
-         * sys.loadWebAudioSound
-         * @param context
-         * @param url
-         * @param onAudioLoaded
-         * @param onAudioError
-         */
-        function loadWebAudioSound(context, url, onAudioLoaded, onAudioError) {
-            var self = context;
-            var request = new XMLHttpRequest();
-            request.open("GET", url, true);
-            request.responseType = "arraybuffer";
-            request.onreadystatechange = function () {
-                if (request.readyState == 4) {
-                    var ioError = (request.status >= 400 || request.status == 0);
-                    if (ioError) {
-                        self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
-                    }
-                    else {
-                        qgame.WebAudioDecode.decodeArr.push({
-                            "buffer": request.response,
-                            "success": onAudioLoaded,
-                            "fail": onAudioError,
-                            "self": self,
-                            "url": url
-                        });
-                        qgame.WebAudioDecode.decodeAudios();
-                    }
-                }
-            };
-            request.send();
-        }
-        egret.sys.loadWebAudioSound = loadWebAudioSound;
         egret.Geolocation = egret.qgame.WebGeolocation;
         egret.Motion = egret.qgame.WebMotion;
     })(qgame = egret.qgame || (egret.qgame = {}));
