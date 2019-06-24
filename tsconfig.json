@@ -34,7 +34,7 @@
 		"src/WebGLDrawCmdManager.ts",
 		"src/org/WebGLVertexArrayObject.ts",
 		"src/WebGLRenderTarget.ts",
-		"src/WebGLRenderBuffer.ts",
+		"src/org/WebGLRenderBuffer.ts",
 		"src/WebGLRenderer.ts",
 		"src/WebSysImpl.ts",
 		"src/EgretWebGLAttribute.ts",
