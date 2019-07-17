@@ -578,7 +578,11 @@ namespace egret.qgame {
                     }
                 }
                 if (bitmapData.$deleteSource && bitmapData.webGLTexture) {
-                    bitmapData.source = null;
+                    if (bitmapData.source) {
+                        // WeChat Memory leakage bug
+                        bitmapData.source.src = '';
+                        bitmapData.source = null;
+                    }
                     bitmapData.clearCompressedTextureData();
                 }
                 if (bitmapData.webGLTexture) {
@@ -1263,6 +1267,23 @@ namespace egret.qgame {
         public static blendModesForGL: any = null;
 
         public static initBlendMode(): void {
+            /*参考
+            gl.ZERO = 0
+            gl.ONE = 1
+            gl.SRC_COLOR = 768
+            gl.ONE_MINUS_SRC_COLOR = 769
+            gl.DST_COLOR = 774
+            gl.ONE_MINUS_DST_COLOR = 775
+            gl.SRC_ALPHA = 770
+            gl.ONE_MINUS_SRC_ALPHA = 771
+            gl.DST_ALPHA = 772
+            gl.ONE_MINUS_DST_ALPHA = 773
+            gl.CONSTANT_COLOR = 32769
+            gl.ONE_MINUS_CONSTANT_COLOR = 32770
+            gl.CONSTANT_ALPHA = 32771
+            gl.ONE_MINUS_CONSTANT_ALPHA = 32772
+            gl.SRC_ALPHA_SATURATE = 776
+            */
             WebGLRenderContext.blendModesForGL = {};
             WebGLRenderContext.blendModesForGL["source-over"] = [1, 771];
             WebGLRenderContext.blendModesForGL["lighter"] = [1, 1];
