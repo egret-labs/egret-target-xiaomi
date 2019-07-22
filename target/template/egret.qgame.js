@@ -4363,7 +4363,7 @@ if (window['HTMLVideoElement'] == undefined) {
                 alpha = Math.min(alpha, 1.0);
                 var globalTintColor = buffer.globalTintColor;
                 var currentTexture = buffer.currentTexture;
-                alpha = ((alpha < 1.0 && currentTexture && currentTexture[UNPACK_PREMULTIPLY_ALPHA_WEBGL]) ?
+                alpha = ((alpha < 1.0 && currentTexture && currentTexture[egret.UNPACK_PREMULTIPLY_ALPHA_WEBGL]) ?
                     egret.WebGLUtils.premultiplyTint(globalTintColor, alpha)
                     : globalTintColor + (alpha * 255 << 24));
                 /*
@@ -7064,7 +7064,7 @@ if (window['HTMLVideoElement'] == undefined) {
                 texture[egret.is_compressed_texture] = true;
                 gl.bindTexture(gl.TEXTURE_2D, texture);
                 gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-                texture[UNPACK_PREMULTIPLY_ALPHA_WEBGL] = true;
+                texture[egret.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = true;
                 gl.compressedTexImage2D(gl.TEXTURE_2D, levels, internalFormat, width, height, 0, data);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -8518,7 +8518,7 @@ if (window['HTMLVideoElement'] == undefined) {
                     page.webGLTexture[egret.glContext] = gl;
                     gl.bindTexture(gl.TEXTURE_2D, page.webGLTexture);
                     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-                    page.webGLTexture[UNPACK_PREMULTIPLY_ALPHA_WEBGL] = true;
+                    page.webGLTexture[egret.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = true;
                     gl.texSubImage2D(gl.TEXTURE_2D, 0, txtBlock.subImageOffsetX, txtBlock.subImageOffsetY, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
                     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
                 }
