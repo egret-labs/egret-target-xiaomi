@@ -1,6 +1,6 @@
 {
 	"projectType": "qgame",
-	"version": "0.2.3",
+	"version": "0.2.5",
 	"args": [
 		{
 			"name": "name",
