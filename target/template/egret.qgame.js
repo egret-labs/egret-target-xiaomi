@@ -2875,7 +2875,7 @@ r.prototype = e.prototype, t.prototype = new r();
         /**
          * 支持库版本号
          */
-        qgame.version = "0.2.5";
+        qgame.version = "0.2.6";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {

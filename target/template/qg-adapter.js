@@ -73,12 +73,10 @@
 	    _window.canvas.removeEventListener = _window.removeEventListener;
 	  }
 
-	  var _qg$getSystemInfoSync = qg.getSystemInfoSync(),
-	      platform = _qg$getSystemInfoSync.platform;
+	  var sysInfo = qg.getSystemInfoSync();
+	  var platform = sysInfo.platformVersionName || sysInfo.platform;
 
 	  // 旧版无法重定义 window
-
-
 	  var docDescriptor = Object.getOwnPropertyDescriptor(window, 'document');
 
 	  if (platform === 'devtools' || !docDescriptor.configurable) {
@@ -227,7 +225,9 @@
 	var _window = window;
 
 	var _qg$getSystemInfoSync = qg.getSystemInfoSync(),
-	    devicePixelRatio = _qg$getSystemInfoSync.devicePixelRatio;
+	    pixelRatio = _qg$getSystemInfoSync.pixelRatio;
+
+	var devicePixelRatio = pixelRatio;
 
 	var innerWidth = exports.innerWidth = _window.innerWidth;
 	var innerHeight = exports.innerHeight = _window.innerHeight;
@@ -254,9 +254,8 @@
 	var performance = void 0;
 
 	if (qg.getPerformance) {
-	  var _qg$getSystemInfoSync = qg.getSystemInfoSync(),
-	      platform = _qg$getSystemInfoSync.platform;
-
+	  var sysInfo = qg.getSystemInfoSync();
+	  var platform = sysInfo.platformVersionName || sysInfo.platform;
 	  var qgPerf = qg.getPerformance();
 	  var initTime = qgPerf.now();
 
@@ -631,30 +630,21 @@
 	});
 	exports.default = Canvas;
 
-	var _constructor = __webpack_require__(4);
-
 	var _HTMLElement = __webpack_require__(5);
 
 	var _HTMLElement2 = _interopRequireDefault(_HTMLElement);
 
-	var _document = __webpack_require__(11);
-
-	var _document2 = _interopRequireDefault(_document);
-
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var hasModifiedCanvasPrototype = false;
-	var hasInit2DContextConstructor = false;
-	var hasInitWebGLContextConstructor = false;
+	var _document = window.document;
 
-	var _Canvas = window.Canvas;
 	var isGetCanvas = true;
 	function createCanvas() {
 	  if (isGetCanvas) {
 	    isGetCanvas = false;
-	    return getCurrentPage().getCanvas();
+	    return _document.getElementById('canvas');
 	  }
-	  return new _Canvas();
+	  return _document.createElement('canvas');
 	}
 	function Canvas() {
 
@@ -1104,9 +1094,8 @@
 	var _util = __webpack_require__(9);
 
 	// TODO 需要 qg.getSystemInfo 获取更详细信息
-	var _qg$getSystemInfoSync = qg.getSystemInfoSync(),
-	    platform = _qg$getSystemInfoSync.platform;
-
+	var sysInfo = qg.getSystemInfoSync();
+	var platform = sysInfo.platformVersionName || sysInfo.platform;
 	var navigator = {
 	  platform: platform,
 	  language: 'zh-cn',
