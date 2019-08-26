@@ -2875,7 +2875,7 @@ r.prototype = e.prototype, t.prototype = new r();
         /**
          * 支持库版本号
          */
-        qgame.version = "0.2.7";
+        qgame.version = "0.2.8";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {
@@ -8872,6 +8872,8 @@ if (window['HTMLVideoElement'] == undefined) {
             //
             texture[egret.glContext] = gl;
             gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+            texture[egret.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = true;
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
