@@ -184,6 +184,7 @@ r.prototype = e.prototype, t.prototype = new r();
                 return _this;
             }
             WebPlayer.prototype.init = function (container, options) {
+                console.log("Egret Engine Version:", egret.Capabilities.engineVersion);
                 var option = this.readOption(container, options);
                 var stage = new egret.Stage();
                 stage.$screen = this;
@@ -2875,7 +2876,7 @@ r.prototype = e.prototype, t.prototype = new r();
         /**
          * 支持库版本号
          */
-        qgame.version = "0.2.8";
+        qgame.version = "0.2.9";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {
