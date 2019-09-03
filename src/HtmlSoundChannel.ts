@@ -51,7 +51,7 @@ namespace egret.qgame {
         /**
          * @private
          */
-        private audio: HTMLAudioElement = null;
+        private audio: qg.InnerAudioContext = null;
 
         //声音是否已经播放完成
         private isStopped: boolean = false;
@@ -59,20 +59,20 @@ namespace egret.qgame {
         /**
          * @private
          */
-        constructor(audio: HTMLAudioElement) {
+        constructor(audio: qg.InnerAudioContext) {
             super();
-            audio.addEventListener("ended", this.onPlayEnd);
             this.audio = audio;
         }
 
         $play(): void {
             if (this.isStopped) {
-                egret.$error(1036);
+                egret.warn(1036);
                 return;
             }
             this.audio.play();
+            this.audio.onEnded(this.onPlayEnd.bind(this))
             this.audio.volume = this._volume;
-            this.audio.currentTime = this.$startTime;
+            this.audio.seek(this.$startTime);
         }
 
         /**
@@ -109,18 +109,12 @@ namespace egret.qgame {
             this.isStopped = true;
 
             let audio = this.audio;
-            audio.removeEventListener("ended", this.onPlayEnd);
+            audio.offEnded(this.onPlayEnd.bind(this))
+
             audio.volume = 0;
             this._volume = 0;
             this.audio = null;
-
-            let url = this.$url;
-
-            //延迟一定时间再停止，规避chrome报错
-            window.setTimeout(function () {
-                audio.pause();
-                HtmlSound.$recycle(url, audio);
-            }, 200);
+            audio.pause();
         }
 
         /**
@@ -141,7 +135,7 @@ namespace egret.qgame {
          */
         public set volume(value: number) {
             if (this.isStopped) {
-                egret.$error(1036);
+                egret.warn(1036);
                 return;
             }
             this._volume = value;

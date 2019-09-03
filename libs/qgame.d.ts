@@ -1,11 +1,30 @@
 declare class qg {
     /**同步获取系统信息 */
     static getSystemInfoSync(): qg.ISysInfo;
+    static createInnerAudioContext():qg.InnerAudioContext;
 }
 declare namespace qg {
     interface ISysInfo {
         language: string;
         system: string;
+    }
+    interface InnerAudioContext{
+        play();
+        pause();
+        onCanplay(callback: Function);
+        offCanplay(callback: Function);
+        onError(callback: Function);
+        offError(callback: Function);
+        onEnded(callback: Function);
+        offEnded(callback: Function);
+        seek(position: number);//跳转的时间，单位 s
+        src: string;//音频资源的地址
+        startTime:Number;//开始播放的位置（单位：s），默认为 0
+        autoplay:boolean;//是否自动播放，默认是 false
+        duration: number;//当前音频的长度 单位 s
+        volume: number;//音量。范围 0~1，默认是 1
+        currentTime: number;//当前音频的播放位置，单位 s
+        
     }
 }
 
