@@ -11,6 +11,7 @@ declare namespace qg {
     interface InnerAudioContext{
         play();
         pause();
+        stop();
         onCanplay(callback: Function);
         offCanplay(callback: Function);
         onError(callback: Function);

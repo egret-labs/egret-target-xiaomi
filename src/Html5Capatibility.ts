@@ -28,31 +28,11 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 namespace egret.qgame {
-
-    /**
-     * @private
-     */
-    export class AudioType {
-        /**
-         * @private
-         */
-        static WEB_AUDIO: number = 2;
-        /**
-         * @private
-         */
-        static HTML5_AUDIO: number = 3;
-    }
-
     /**
      * html5兼容性配置
      * @private
      */
     export class Html5Capatibility extends HashObject {
-        //当前浏览器版本是否支持blob
-        public static _canUseBlob: boolean = false;
-
-        //当前浏览器版本是否支持webaudio
-        public static _audioType: number = 0;
         /**
          * @private
          */
@@ -74,61 +54,7 @@ namespace egret.qgame {
          *
          */
         public static $init(): void {
-            let systemInfo = qg.getSystemInfoSync();
-            Html5Capatibility.systemInfo = systemInfo;
-
-            Html5Capatibility._canUseBlob = false;
-            let canUseWebAudio = window["AudioContext"] || window["webkitAudioContext"] || window["mozAudioContext"];
-            if (canUseWebAudio) {
-                try {
-                    //防止某些chrome版本创建异常问题
-                    WebAudioDecode.ctx = new (window["AudioContext"] || window["webkitAudioContext"] || window["mozAudioContext"])();
-                }
-                catch (e) {
-                    canUseWebAudio = false;
-                }
-            }
-            let audioType = Html5Capatibility._audioType;
-            let checkAudioType;
-            if ((audioType == AudioType.WEB_AUDIO && canUseWebAudio) || audioType == AudioType.HTML5_AUDIO) {
-                checkAudioType = false;
-                Html5Capatibility.setAudioType(audioType);
-            }
-            else {
-                checkAudioType = true;
-                Html5Capatibility.setAudioType(AudioType.HTML5_AUDIO);
-            }
-
-            var platformStr = systemInfo.system.toLowerCase();
-            if (platformStr.indexOf("android") >= 0) {//android
-                if (checkAudioType && canUseWebAudio) {
-                    Html5Capatibility.setAudioType(AudioType.WEB_AUDIO);
-                }
-            } else {//ios
-                Html5Capatibility._canUseBlob = true;
-                if (checkAudioType && canUseWebAudio) {
-                    Html5Capatibility.setAudioType(AudioType.WEB_AUDIO);
-                }
-            }
-
-            let winURL = window["URL"] || window["webkitURL"];
-            if (!winURL) {
-                Html5Capatibility._canUseBlob = false;
-            }
-
-            egret.Sound = Html5Capatibility._AudioClass;
-        }
-
-        private static setAudioType(type: number): void {
-            Html5Capatibility._audioType = type;
-            switch (type) {
-                case AudioType.WEB_AUDIO:
-                    Html5Capatibility._AudioClass = WebAudioSound;
-                    break;
-                case AudioType.HTML5_AUDIO:
-                    Html5Capatibility._AudioClass = HtmlSound;
-                    break;
-            }
+            egret.Sound = HtmlSound
         }
     }
 

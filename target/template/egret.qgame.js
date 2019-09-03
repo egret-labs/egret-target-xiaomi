@@ -172,167 +172,132 @@ r.prototype = e.prototype, t.prototype = new r();
 (function (egret) {
     var qgame;
     (function (qgame) {
+        var sharedCanvas;
+        var sharedContext;
         /**
          * @private
          */
-        var WebPlayer = (function (_super) {
-            __extends(WebPlayer, _super);
-            function WebPlayer(container, options) {
-                var _this = _super.call(this) || this;
-                _this.init(container, options);
-                _this.initOrientation();
-                return _this;
+        function convertImageToCanvas(texture, rect) {
+            if (!sharedCanvas) {
+                sharedCanvas = document.createElement("canvas");
+                sharedContext = sharedCanvas.getContext("2d");
             }
-            WebPlayer.prototype.init = function (container, options) {
-                console.log("Egret Engine Version:", egret.Capabilities.engineVersion);
-                var option = this.readOption(container, options);
-                var stage = new egret.Stage();
-                stage.$screen = this;
-                stage.$scaleMode = option.scaleMode;
-                stage.$orientation = option.orientation;
-                stage.$maxTouches = option.maxTouches;
-                stage.frameRate = option.frameRate;
-                stage.textureScaleFactor = option.textureScaleFactor;
-                var buffer = new egret.sys.RenderBuffer(undefined, undefined, true);
-                var canvas = buffer.surface;
-                this.attachCanvas(container, canvas);
-                var webTouch = new qgame.WebTouchHandler(stage, canvas);
-                var player = new egret.sys.Player(buffer, stage, option.entryClassName);
-                egret.lifecycle.stage = stage;
-                egret.lifecycle.addLifecycleListener(qgame.WebLifeCycleHandler);
-                if (option.showFPS || option.showLog) {
-                    player.displayFPS(option.showFPS, option.showLog, option.logFilter, option.fpsStyles);
+            var w = texture.$getTextureWidth();
+            var h = texture.$getTextureHeight();
+            if (rect == null) {
+                rect = egret.$TempRectangle;
+                rect.x = 0;
+                rect.y = 0;
+                rect.width = w;
+                rect.height = h;
+            }
+            rect.x = Math.min(rect.x, w - 1);
+            rect.y = Math.min(rect.y, h - 1);
+            rect.width = Math.min(rect.width, w - rect.x);
+            rect.height = Math.min(rect.height, h - rect.y);
+            var iWidth = Math.floor(rect.width);
+            var iHeight = Math.floor(rect.height);
+            var surface = sharedCanvas;
+            surface["style"]["width"] = iWidth + "px";
+            surface["style"]["height"] = iHeight + "px";
+            sharedCanvas.width = iWidth;
+            sharedCanvas.height = iHeight;
+            if (egret.Capabilities.renderMode == "webgl") {
+                var renderTexture = void 0;
+                //webgl下非RenderTexture纹理先画到RenderTexture
+                if (!texture.$renderBuffer) {
+                    renderTexture = new egret.RenderTexture();
+                    renderTexture.drawToTexture(new egret.Bitmap(texture));
                 }
-                this.playerOption = option;
-                this.container = container;
-                this.canvas = canvas;
-                this.stage = stage;
-                this.player = player;
-                this.webTouchHandler = webTouch;
-                this.updateScreenSize();
-                this.updateMaxTouches();
-                player.start();
-            };
-            WebPlayer.prototype.initOrientation = function () {
-                var self = this;
-                window.addEventListener("orientationchange", function () {
-                    window.setTimeout(function () {
-                        egret.StageOrientationEvent.dispatchStageOrientationEvent(self.stage, egret.StageOrientationEvent.ORIENTATION_CHANGE);
-                    }, 350);
-                });
-            };
-            /**
-             * 读取初始化参数
-             */
-            WebPlayer.prototype.readOption = function (container, options) {
-                var option = {};
-                option.entryClassName = options.entryClassName || "Main";
-                option.scaleMode = options.scaleMode || egret.StageScaleMode.FIXED_WIDTH;
-                if (option.scaleMode == egret.StageScaleMode.SHOW_ALL) {
-                    option.scaleMode = egret.StageScaleMode.FIXED_WIDE;
-                    var message = egret.sys.tr(4500, "showAll", "fixedWidth");
-                    console.warn(message);
+                else {
+                    renderTexture = texture;
                 }
-                option.frameRate = options.frameRate || 30;
-                option.contentWidth = options.contentWidth || 640;
-                option.contentHeight = options.contentHeight || 1136;
-                option.orientation = options.orientation || egret.OrientationMode.AUTO;
-                option.maxTouches = options.maxTouches;
-                option.textureScaleFactor = 1;
-                option.showFPS = options.showFPS;
-                var styleStr = options.fpsStyles || "x:0,y:0,size:12,textColor:0xffffff,bgAlpha:0.9";
-                var stylesArr = styleStr.split(",");
-                var styles = {};
-                for (var i = 0; i < stylesArr.length; i++) {
-                    var tempStyleArr = stylesArr[i].split(":");
-                    styles[tempStyleArr[0]] = tempStyleArr[1];
+                //从RenderTexture中读取像素数据，填入canvas
+                var pixels = renderTexture.$renderBuffer.getPixels(rect.x, rect.y, iWidth, iHeight);
+                var x = 0;
+                var y = 0;
+                for (var i = 0; i < pixels.length; i += 4) {
+                    sharedContext.fillStyle =
+                        'rgba(' + pixels[i]
+                            + ',' + pixels[i + 1]
+                            + ',' + pixels[i + 2]
+                            + ',' + (pixels[i + 3] / 255) + ')';
+                    sharedContext.fillRect(x, y, 1, 1);
+                    x++;
+                    if (x == iWidth) {
+                        x = 0;
+                        y++;
+                    }
                 }
-                option.fpsStyles = styles;
-                option.showLog = false;
-                option.logFilter = "";
-                return option;
-            };
-            /**
-             * @private
-             * 添加canvas到container。
-             */
-            WebPlayer.prototype.attachCanvas = function (container, canvas) {
-                // let style = canvas.style;
-                // style.cursor = "inherit";
-                // style.position = "absolute";
-                // style.top = "0";
-                // style.bottom = "0";
-                // style.left = "0";
-                // style.right = "0";
-                // container.appendChild(canvas);
-                // style = container.style;
-                // style.overflow = "hidden";
-                // style.position = "absolute";
-            };
-            /**
-             * @private
-             * 更新播放器视口尺寸
-             */
-            WebPlayer.prototype.updateScreenSize = function () {
-                var canvas = this.canvas;
-                if (canvas['userTyping'])
-                    return;
-                var option = this.playerOption;
-                var deviceInfo = system.device.getInfoSync();
-                var boundingClientWidth = window.innerWidth;
-                var boundingClientHeight = window.innerHeight;
-                var shouldRotate = false;
-                var orientation = this.stage.$orientation;
-                if (orientation != egret.OrientationMode.AUTO) {
-                    shouldRotate = orientation != egret.OrientationMode.PORTRAIT && boundingClientHeight > boundingClientWidth
-                        || orientation == egret.OrientationMode.PORTRAIT && boundingClientWidth > boundingClientHeight;
+                if (!texture.$renderBuffer) {
+                    renderTexture.dispose();
                 }
-                var screenWidth = shouldRotate ? boundingClientHeight : boundingClientWidth;
-                var screenHeight = shouldRotate ? boundingClientWidth : boundingClientHeight;
-                egret.Capabilities["boundingClientWidth" + ""] = screenWidth;
-                egret.Capabilities["boundingClientHeight" + ""] = screenHeight;
-                var stageSize = egret.sys.screenAdapter.calculateStageSize(this.stage.$scaleMode, screenWidth, screenHeight, option.contentWidth, option.contentHeight);
-                var stageWidth = stageSize.stageWidth;
-                var stageHeight = stageSize.stageHeight;
-                var displayWidth = stageSize.displayWidth;
-                var displayHeight = stageSize.displayHeight;
-                // canvas.style[getPrefixStyleName("transformOrigin")] = "0% 0% 0px";
-                if (canvas.width != stageWidth) {
-                    canvas.width = stageWidth;
+                return surface;
+            }
+            else {
+                var bitmapData = texture;
+                var offsetX = Math.round(bitmapData.$offsetX);
+                var offsetY = Math.round(bitmapData.$offsetY);
+                var bitmapWidth = bitmapData.$bitmapWidth;
+                var bitmapHeight = bitmapData.$bitmapHeight;
+                sharedContext.drawImage(bitmapData.$bitmapData.source, bitmapData.$bitmapX + rect.x / egret.$TextureScaleFactor, bitmapData.$bitmapY + rect.y / egret.$TextureScaleFactor, bitmapWidth * rect.width / w, bitmapHeight * rect.height / h, offsetX, offsetY, rect.width, rect.height);
+                return surface;
+            }
+        }
+        /**
+         * @private
+         */
+        function toDataURL(type, rect, encoderOptions) {
+            try {
+                var surface = convertImageToCanvas(this, rect);
+                var result = surface.toDataURL(type, encoderOptions);
+                return result;
+            }
+            catch (e) {
+                egret.$error(1033);
+            }
+            return null;
+        }
+        /**
+         * 有些杀毒软件认为 saveToFile 可能是一个病毒文件
+         */
+        function eliFoTevas(type, filePath, rect, encoderOptions) {
+        }
+        function getPixel32(x, y) {
+            egret.$warn(1041, "getPixel32", "getPixels");
+            return this.getPixels(x, y);
+        }
+        function getPixels(x, y, width, height) {
+            if (width === void 0) { width = 1; }
+            if (height === void 0) { height = 1; }
+            //webgl环境下不需要转换成canvas获取像素信息
+            if (egret.Capabilities.renderMode == "webgl") {
+                var renderTexture = void 0;
+                //webgl下非RenderTexture纹理先画到RenderTexture
+                if (!this.$renderBuffer) {
+                    renderTexture = new egret.RenderTexture();
+                    renderTexture.drawToTexture(new egret.Bitmap(this));
                 }
-                if (canvas.height != stageHeight) {
-                    canvas.height = stageHeight;
+                else {
+                    renderTexture = this;
                 }
-                var rotation = 0;
-                var scalex = displayWidth / stageWidth, scaley = displayHeight / stageHeight;
-                var canvasScaleX = scalex * egret.sys.DisplayList.$canvasScaleFactor;
-                var canvasScaleY = scaley * egret.sys.DisplayList.$canvasScaleFactor;
-                var m = new egret.Matrix();
-                m.scale(scalex / canvasScaleX, scaley / canvasScaleY);
-                m.rotate(rotation * Math.PI / 180);
-                var transform = "matrix(" + m.a + "," + m.b + "," + m.c + "," + m.d + "," + m.tx + "," + m.ty + ")";
-                // canvas.style[getPrefixStyleName("transform")] = transform;
-                egret.sys.DisplayList.$setCanvasScale(canvasScaleX, canvasScaleY);
-                this.webTouchHandler.updateScaleMode(scalex, scaley, rotation);
-                this.player.updateStageSize(stageWidth, stageHeight); //不要在这个方法后面修改属性
-            };
-            WebPlayer.prototype.setContentSize = function (width, height) {
-                var option = this.playerOption;
-                option.contentWidth = width;
-                option.contentHeight = height;
-                this.updateScreenSize();
-            };
-            /**
-             * @private
-             * 更新触摸数量
-             */
-            WebPlayer.prototype.updateMaxTouches = function () {
-                this.webTouchHandler.$updateMaxTouches();
-            };
-            return WebPlayer;
-        }(egret.HashObject));
-        qgame.WebPlayer = WebPlayer;
-        __reflect(WebPlayer.prototype, "egret.qgame.WebPlayer", ["egret.sys.Screen"]);
+                //从RenderTexture中读取像素数据
+                var pixels = renderTexture.$renderBuffer.getPixels(x, y, width, height);
+                return pixels;
+            }
+            try {
+                var surface = convertImageToCanvas(this);
+                var result = sharedContext.getImageData(x, y, width, height).data;
+                return result;
+            }
+            catch (e) {
+                egret.$error(1039);
+            }
+        }
+        egret.Texture.prototype.toDataURL = toDataURL;
+        egret.Texture.prototype.saveToFile = eliFoTevas;
+        egret.Texture.prototype.getPixel32 = getPixel32;
+        egret.Texture.prototype.getPixels = getPixels;
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 //////////////////////////////////////////////////////////////////////////////////////
@@ -402,18 +367,14 @@ r.prototype = e.prototype, t.prototype = new r();
             HtmlSound.prototype.load = function (url) {
                 var self = this;
                 this.url = url;
-                if (true && !url) {
-                    egret.$error(3002);
+                if (!url) {
+                    egret.warn(3002);
                 }
-                var audio = new Audio(url);
-                audio.addEventListener("canplaythrough", onAudioLoaded);
-                audio.addEventListener("error", onAudioError);
-                // audio.load();     qgame没有此接口
+                var audio = qg.createInnerAudioContext();
+                audio.onCanplay(onAudioLoaded);
+                audio.onError(onAudioError);
                 this.originAudio = audio;
-                if (HtmlSound.clearAudios[this.url]) {
-                    delete HtmlSound.clearAudios[this.url];
-                }
-                HtmlSound.$recycle(this.url, audio);
+                audio.src = url;
                 function onAudioLoaded() {
                     removeListeners();
                     self.loaded = true;
@@ -424,8 +385,8 @@ r.prototype = e.prototype, t.prototype = new r();
                     self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
                 }
                 function removeListeners() {
-                    audio.removeEventListener("canplaythrough", onAudioLoaded);
-                    audio.removeEventListener("error", onAudioError);
+                    audio.offCanplay(onAudioLoaded);
+                    audio.offError(onAudioError);
                 }
             };
             /**
@@ -434,16 +395,10 @@ r.prototype = e.prototype, t.prototype = new r();
             HtmlSound.prototype.play = function (startTime, loops) {
                 startTime = +startTime || 0;
                 loops = +loops || 0;
-                if (true && this.loaded == false) {
-                    egret.$error(1049);
+                if (this.loaded == false) {
+                    egret.warn(1049);
                 }
-                var audio = HtmlSound.$pop(this.url);
-                if (audio == null) {
-                    audio = this.originAudio.cloneNode();
-                }
-                else {
-                    //audio.load();
-                }
+                var audio = this.originAudio;
                 audio.autoplay = true;
                 var channel = new qgame.HtmlSoundChannel(audio);
                 channel.$url = this.url;
@@ -457,35 +412,8 @@ r.prototype = e.prototype, t.prototype = new r();
              * @inheritDoc
              */
             HtmlSound.prototype.close = function () {
-                if (this.loaded == false && this.originAudio)
-                    this.originAudio.src = "";
                 if (this.originAudio)
                     this.originAudio = null;
-                HtmlSound.$clear(this.url);
-            };
-            HtmlSound.$clear = function (url) {
-                HtmlSound.clearAudios[url] = true;
-                var array = HtmlSound.audios[url];
-                if (array) {
-                    array.length = 0;
-                }
-            };
-            HtmlSound.$pop = function (url) {
-                var array = HtmlSound.audios[url];
-                if (array && array.length > 0) {
-                    return array.pop();
-                }
-                return null;
-            };
-            HtmlSound.$recycle = function (url, audio) {
-                if (HtmlSound.clearAudios[url]) {
-                    return;
-                }
-                var array = HtmlSound.audios[url];
-                if (HtmlSound.audios[url] == null) {
-                    array = HtmlSound.audios[url] = [];
-                }
-                array.push(audio);
             };
             /**
              * Background music
@@ -513,11 +441,6 @@ r.prototype = e.prototype, t.prototype = new r();
              * @language zh_CN
              */
             HtmlSound.EFFECT = "effect";
-            /**
-             * @private
-             */
-            HtmlSound.audios = {};
-            HtmlSound.clearAudios = {};
             return HtmlSound;
         }(egret.EventDispatcher));
         qgame.HtmlSound = HtmlSound;
@@ -589,26 +512,26 @@ r.prototype = e.prototype, t.prototype = new r();
                     if (_this.$loops > 0) {
                         _this.$loops--;
                     }
-                    /////////////
-                    //this.audio.load();
+                    _this.audio.offEnded(_this.onPlayEnd.bind(_this));
+                    _this.audio.stop();
                     _this.$play();
                 };
                 /**
                  * @private
                  */
                 _this._volume = 1;
-                audio.addEventListener("ended", _this.onPlayEnd);
                 _this.audio = audio;
                 return _this;
             }
             HtmlSoundChannel.prototype.$play = function () {
                 if (this.isStopped) {
-                    egret.$error(1036);
+                    egret.warn(1036);
                     return;
                 }
                 this.audio.play();
+                this.audio.onEnded(this.onPlayEnd.bind(this));
                 this.audio.volume = this._volume;
-                this.audio.currentTime = this.$startTime;
+                this.audio.seek(this.$startTime);
             };
             /**
              * @private
@@ -622,16 +545,8 @@ r.prototype = e.prototype, t.prototype = new r();
                 }
                 this.isStopped = true;
                 var audio = this.audio;
-                audio.removeEventListener("ended", this.onPlayEnd);
-                audio.volume = 0;
-                this._volume = 0;
-                this.audio = null;
-                var url = this.$url;
-                //延迟一定时间再停止，规避chrome报错
-                window.setTimeout(function () {
-                    audio.pause();
-                    qgame.HtmlSound.$recycle(url, audio);
-                }, 200);
+                audio.offEnded(this.onPlayEnd.bind(this));
+                audio.stop();
             };
             Object.defineProperty(HtmlSoundChannel.prototype, "volume", {
                 /**
@@ -646,7 +561,7 @@ r.prototype = e.prototype, t.prototype = new r();
                  */
                 set: function (value) {
                     if (this.isStopped) {
-                        egret.$error(1036);
+                        egret.warn(1036);
                         return;
                     }
                     this._volume = value;
@@ -674,383 +589,6 @@ r.prototype = e.prototype, t.prototype = new r();
         }(egret.EventDispatcher));
         qgame.HtmlSoundChannel = HtmlSoundChannel;
         __reflect(HtmlSoundChannel.prototype, "egret.qgame.HtmlSoundChannel", ["egret.SoundChannel", "egret.IEventDispatcher"]);
-    })(qgame = egret.qgame || (egret.qgame = {}));
-})(egret || (egret = {}));
-//////////////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (c) 2014-present, Egret Technology.
-//  All rights reserved.
-//  Redistribution and use in source and binary forms, with or without
-//  modification, are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//     * Neither the name of the Egret nor the
-//       names of its contributors may be used to endorse or promote products
-//       derived from this software without specific prior written permission.
-//
-//  THIS SOFTWARE IS PROVIDED BY EGRET AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-//  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-//  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-//  IN NO EVENT SHALL EGRET AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-//  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;LOSS OF USE, DATA,
-//  OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-//  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-//  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-//  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-//////////////////////////////////////////////////////////////////////////////////////
-
-(function (egret) {
-    var qgame;
-    (function (qgame) {
-        /**
-         * @private
-         */
-        var WebAudioDecode = (function () {
-            function WebAudioDecode() {
-            }
-            /**
-             * @private
-             *
-             */
-            WebAudioDecode.decodeAudios = function () {
-                if (WebAudioDecode.decodeArr.length <= 0) {
-                    return;
-                }
-                if (WebAudioDecode.isDecoding) {
-                    return;
-                }
-                WebAudioDecode.isDecoding = true;
-                var decodeInfo = WebAudioDecode.decodeArr.shift();
-                WebAudioDecode.ctx.decodeAudioData(decodeInfo["buffer"], function (audioBuffer) {
-                    decodeInfo["self"].audioBuffer = audioBuffer;
-                    if (decodeInfo["success"]) {
-                        decodeInfo["success"]();
-                    }
-                    WebAudioDecode.isDecoding = false;
-                    WebAudioDecode.decodeAudios();
-                }, function () {
-                    alert("sound decode error: " + decodeInfo["url"] + "！\nsee http://edn.egret.com/cn/docs/page/156");
-                    if (decodeInfo["fail"]) {
-                        decodeInfo["fail"]();
-                    }
-                    WebAudioDecode.isDecoding = false;
-                    WebAudioDecode.decodeAudios();
-                });
-            };
-            /**
-             * @private
-             */
-            WebAudioDecode.decodeArr = [];
-            /**
-             * @private
-             */
-            WebAudioDecode.isDecoding = false;
-            return WebAudioDecode;
-        }());
-        qgame.WebAudioDecode = WebAudioDecode;
-        __reflect(WebAudioDecode.prototype, "egret.qgame.WebAudioDecode");
-        /**
-         * @private
-         * @inheritDoc
-         */
-        var WebAudioSound = (function (_super) {
-            __extends(WebAudioSound, _super);
-            /**
-             * @private
-             * @inheritDoc
-             */
-            function WebAudioSound() {
-                var _this = _super.call(this) || this;
-                /**
-                 * @private
-                 */
-                _this.loaded = false;
-                return _this;
-            }
-            Object.defineProperty(WebAudioSound.prototype, "length", {
-                get: function () {
-                    if (this.audioBuffer) {
-                        return this.audioBuffer.duration;
-                    }
-                    throw new Error("sound not loaded!");
-                    //return 0;
-                },
-                enumerable: true,
-                configurable: true
-            });
-            /**
-             * @inheritDoc
-             */
-            WebAudioSound.prototype.load = function (url) {
-                var self = this;
-                this.url = url;
-                if (true && !url) {
-                    egret.$error(3002);
-                }
-                var request = new XMLHttpRequest();
-                request.open("GET", url, true);
-                request.responseType = "arraybuffer";
-                request.onreadystatechange = function () {
-                    if (request.readyState == 4) {
-                        var ioError = (request.status >= 400 || request.status == 0);
-                        if (ioError) {
-                            self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
-                        }
-                        else {
-                            WebAudioDecode.decodeArr.push({
-                                "buffer": request.response,
-                                "success": onAudioLoaded,
-                                "fail": onAudioError,
-                                "self": self,
-                                "url": self.url
-                            });
-                            WebAudioDecode.decodeAudios();
-                        }
-                    }
-                };
-                request.send();
-                function onAudioLoaded() {
-                    self.loaded = true;
-                    self.dispatchEventWith(egret.Event.COMPLETE);
-                }
-                function onAudioError() {
-                    self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
-                }
-            };
-            /**
-             * @inheritDoc
-             */
-            WebAudioSound.prototype.play = function (startTime, loops) {
-                startTime = +startTime || 0;
-                loops = +loops || 0;
-                if (true && this.loaded == false) {
-                    egret.$error(1049);
-                }
-                var channel = new qgame.WebAudioSoundChannel();
-                channel.$url = this.url;
-                channel.$loops = loops;
-                channel.$audioBuffer = this.audioBuffer;
-                channel.$startTime = startTime;
-                channel.$play();
-                egret.sys.$pushSoundChannel(channel);
-                return channel;
-            };
-            /**
-             * @inheritDoc
-             */
-            WebAudioSound.prototype.close = function () {
-            };
-            /**
-             * Background music
-             * @version Egret 2.4
-             * @platform Web,Native
-             * @language en_US
-             */
-            /**
-             * 背景音乐
-             * @version Egret 2.4
-             * @platform Web,Native
-             * @language zh_CN
-             */
-            WebAudioSound.MUSIC = "music";
-            /**
-             * EFFECT
-             * @version Egret 2.4
-             * @platform Web,Native
-             * @language en_US
-             */
-            /**
-             * 音效
-             * @version Egret 2.4
-             * @platform Web,Native
-             * @language zh_CN
-             */
-            WebAudioSound.EFFECT = "effect";
-            return WebAudioSound;
-        }(egret.EventDispatcher));
-        qgame.WebAudioSound = WebAudioSound;
-        __reflect(WebAudioSound.prototype, "egret.qgame.WebAudioSound", ["egret.Sound"]);
-    })(qgame = egret.qgame || (egret.qgame = {}));
-})(egret || (egret = {}));
-//////////////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (c) 2014-present, Egret Technology.
-//  All rights reserved.
-//  Redistribution and use in source and binary forms, with or without
-//  modification, are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//     * Neither the name of the Egret nor the
-//       names of its contributors may be used to endorse or promote products
-//       derived from this software without specific prior written permission.
-//
-//  THIS SOFTWARE IS PROVIDED BY EGRET AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-//  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-//  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-//  IN NO EVENT SHALL EGRET AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-//  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;LOSS OF USE, DATA,
-//  OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-//  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-//  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-//  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-//////////////////////////////////////////////////////////////////////////////////////
-
-(function (egret) {
-    var qgame;
-    (function (qgame) {
-        /**
-         * @private
-         * @inheritDoc
-         */
-        var WebAudioSoundChannel = (function (_super) {
-            __extends(WebAudioSoundChannel, _super);
-            /**
-             * @private
-             */
-            function WebAudioSoundChannel() {
-                var _this = _super.call(this) || this;
-                /**
-                 * @private
-                 */
-                _this.$startTime = 0;
-                /**
-                 * @private
-                 */
-                _this.bufferSource = null;
-                /**
-                 * @private
-                 */
-                _this.context = qgame.WebAudioDecode.ctx;
-                //声音是否已经播放完成
-                _this.isStopped = false;
-                /**
-                 * @private
-                 */
-                _this._currentTime = 0;
-                /**
-                 * @private
-                 */
-                _this._volume = 1;
-                /**
-                 * @private
-                 */
-                _this.onPlayEnd = function () {
-                    if (_this.$loops == 1) {
-                        _this.stop();
-                        _this.dispatchEventWith(egret.Event.SOUND_COMPLETE);
-                        return;
-                    }
-                    if (_this.$loops > 0) {
-                        _this.$loops--;
-                    }
-                    /////////////
-                    _this.$play();
-                };
-                /**
-                 * @private
-                 */
-                _this._startTime = 0;
-                if (_this.context["createGain"]) {
-                    _this.gain = _this.context["createGain"]();
-                }
-                else {
-                    _this.gain = _this.context["createGainNode"]();
-                }
-                return _this;
-            }
-            WebAudioSoundChannel.prototype.$play = function () {
-                if (this.isStopped) {
-                    egret.$error(1036);
-                    return;
-                }
-                if (this.bufferSource) {
-                    this.bufferSource.onended = null;
-                    this.bufferSource = null;
-                }
-                var context = this.context;
-                var gain = this.gain;
-                var bufferSource = context.createBufferSource();
-                this.bufferSource = bufferSource;
-                bufferSource.buffer = this.$audioBuffer;
-                bufferSource.connect(gain);
-                gain.connect(context.destination);
-                bufferSource.onended = this.onPlayEnd;
-                this._startTime = Date.now();
-                this.gain.gain.value = this._volume;
-                bufferSource.start(0, this.$startTime);
-                this._currentTime = 0;
-            };
-            WebAudioSoundChannel.prototype.stop = function () {
-                if (this.bufferSource) {
-                    var sourceNode = this.bufferSource;
-                    if (sourceNode.stop) {
-                        sourceNode.stop(0);
-                    }
-                    else {
-                        sourceNode.noteOff(0);
-                    }
-                    sourceNode.onended = null;
-                    sourceNode.disconnect();
-                    this.bufferSource = null;
-                    this.$audioBuffer = null;
-                }
-                if (!this.isStopped) {
-                    egret.sys.$popSoundChannel(this);
-                }
-                this.isStopped = true;
-            };
-            Object.defineProperty(WebAudioSoundChannel.prototype, "volume", {
-                /**
-                 * @private
-                 * @inheritDoc
-                 */
-                get: function () {
-                    return this._volume;
-                },
-                /**
-                 * @inheritDoc
-                 */
-                set: function (value) {
-                    if (this.isStopped) {
-                        egret.$error(1036);
-                        return;
-                    }
-                    this._volume = value;
-                    this.gain.gain.value = value;
-                },
-                enumerable: true,
-                configurable: true
-            });
-            Object.defineProperty(WebAudioSoundChannel.prototype, "position", {
-                /**
-                 * @private
-                 * @inheritDoc
-                 */
-                get: function () {
-                    if (this.bufferSource) {
-                        return (Date.now() - this._startTime) / 1000 + this.$startTime;
-                    }
-                    return 0;
-                },
-                enumerable: true,
-                configurable: true
-            });
-            return WebAudioSoundChannel;
-        }(egret.EventDispatcher));
-        qgame.WebAudioSoundChannel = WebAudioSoundChannel;
-        __reflect(WebAudioSoundChannel.prototype, "egret.qgame.WebAudioSoundChannel", ["egret.SoundChannel", "egret.IEventDispatcher"]);
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 //////////////////////////////////////////////////////////////////////////////////////
@@ -2702,24 +2240,6 @@ r.prototype = e.prototype, t.prototype = new r();
     var qgame;
     (function (qgame) {
         /**
-         * @private
-         */
-        var AudioType = (function () {
-            function AudioType() {
-            }
-            /**
-             * @private
-             */
-            AudioType.WEB_AUDIO = 2;
-            /**
-             * @private
-             */
-            AudioType.HTML5_AUDIO = 3;
-            return AudioType;
-        }());
-        qgame.AudioType = AudioType;
-        __reflect(AudioType.prototype, "egret.qgame.AudioType");
-        /**
          * html5兼容性配置
          * @private
          */
@@ -2736,62 +2256,8 @@ r.prototype = e.prototype, t.prototype = new r();
              *
              */
             Html5Capatibility.$init = function () {
-                var systemInfo = qg.getSystemInfoSync();
-                Html5Capatibility.systemInfo = systemInfo;
-                Html5Capatibility._canUseBlob = false;
-                var canUseWebAudio = window["AudioContext"] || window["webkitAudioContext"] || window["mozAudioContext"];
-                if (canUseWebAudio) {
-                    try {
-                        //防止某些chrome版本创建异常问题
-                        qgame.WebAudioDecode.ctx = new (window["AudioContext"] || window["webkitAudioContext"] || window["mozAudioContext"])();
-                    }
-                    catch (e) {
-                        canUseWebAudio = false;
-                    }
-                }
-                var audioType = Html5Capatibility._audioType;
-                var checkAudioType;
-                if ((audioType == AudioType.WEB_AUDIO && canUseWebAudio) || audioType == AudioType.HTML5_AUDIO) {
-                    checkAudioType = false;
-                    Html5Capatibility.setAudioType(audioType);
-                }
-                else {
-                    checkAudioType = true;
-                    Html5Capatibility.setAudioType(AudioType.HTML5_AUDIO);
-                }
-                var platformStr = systemInfo.system.toLowerCase();
-                if (platformStr.indexOf("android") >= 0) {
-                    if (checkAudioType && canUseWebAudio) {
-                        Html5Capatibility.setAudioType(AudioType.WEB_AUDIO);
-                    }
-                }
-                else {
-                    Html5Capatibility._canUseBlob = true;
-                    if (checkAudioType && canUseWebAudio) {
-                        Html5Capatibility.setAudioType(AudioType.WEB_AUDIO);
-                    }
-                }
-                var winURL = window["URL"] || window["webkitURL"];
-                if (!winURL) {
-                    Html5Capatibility._canUseBlob = false;
-                }
-                egret.Sound = Html5Capatibility._AudioClass;
+                egret.Sound = qgame.HtmlSound;
             };
-            Html5Capatibility.setAudioType = function (type) {
-                Html5Capatibility._audioType = type;
-                switch (type) {
-                    case AudioType.WEB_AUDIO:
-                        Html5Capatibility._AudioClass = qgame.WebAudioSound;
-                        break;
-                    case AudioType.HTML5_AUDIO:
-                        Html5Capatibility._AudioClass = qgame.HtmlSound;
-                        break;
-                }
-            };
-            //当前浏览器版本是否支持blob
-            Html5Capatibility._canUseBlob = false;
-            //当前浏览器版本是否支持webaudio
-            Html5Capatibility._audioType = 0;
             return Html5Capatibility;
         }(egret.HashObject));
         qgame.Html5Capatibility = Html5Capatibility;
@@ -2912,7 +2378,6 @@ r.prototype = e.prototype, t.prototype = new r();
             if (!options) {
                 options = {};
             }
-            qgame.Html5Capatibility._audioType = options.audioType;
             qgame.Html5Capatibility.$init();
             // WebGL上下文参数自定义
             if (options.renderMode == "webgl") {
@@ -3295,28 +2760,164 @@ egret.Capabilities["runtimeType" + ""] = "qgame";
         /**
          * @private
          */
-        var WebExternalInterface = (function () {
-            function WebExternalInterface() {
+        var WebPlayer = (function (_super) {
+            __extends(WebPlayer, _super);
+            function WebPlayer(container, options) {
+                var _this = _super.call(this) || this;
+                _this.init(container, options);
+                _this.initOrientation();
+                return _this;
             }
+            WebPlayer.prototype.init = function (container, options) {
+                console.log("Egret Engine Version:", egret.Capabilities.engineVersion);
+                var option = this.readOption(container, options);
+                var stage = new egret.Stage();
+                stage.$screen = this;
+                stage.$scaleMode = option.scaleMode;
+                stage.$orientation = option.orientation;
+                stage.$maxTouches = option.maxTouches;
+                stage.frameRate = option.frameRate;
+                stage.textureScaleFactor = option.textureScaleFactor;
+                var buffer = new egret.sys.RenderBuffer(undefined, undefined, true);
+                var canvas = buffer.surface;
+                this.attachCanvas(container, canvas);
+                var webTouch = new qgame.WebTouchHandler(stage, canvas);
+                var player = new egret.sys.Player(buffer, stage, option.entryClassName);
+                egret.lifecycle.stage = stage;
+                egret.lifecycle.addLifecycleListener(qgame.WebLifeCycleHandler);
+                if (option.showFPS || option.showLog) {
+                    player.displayFPS(option.showFPS, option.showLog, option.logFilter, option.fpsStyles);
+                }
+                this.playerOption = option;
+                this.container = container;
+                this.canvas = canvas;
+                this.stage = stage;
+                this.player = player;
+                this.webTouchHandler = webTouch;
+                this.updateScreenSize();
+                this.updateMaxTouches();
+                player.start();
+            };
+            WebPlayer.prototype.initOrientation = function () {
+                var self = this;
+                window.addEventListener("orientationchange", function () {
+                    window.setTimeout(function () {
+                        egret.StageOrientationEvent.dispatchStageOrientationEvent(self.stage, egret.StageOrientationEvent.ORIENTATION_CHANGE);
+                    }, 350);
+                });
+            };
             /**
-             * @private
-             * @param functionName
-             * @param value
+             * 读取初始化参数
              */
-            WebExternalInterface.call = function (functionName, value) {
+            WebPlayer.prototype.readOption = function (container, options) {
+                var option = {};
+                option.entryClassName = options.entryClassName || "Main";
+                option.scaleMode = options.scaleMode || egret.StageScaleMode.FIXED_WIDTH;
+                if (option.scaleMode == egret.StageScaleMode.SHOW_ALL) {
+                    option.scaleMode = egret.StageScaleMode.FIXED_WIDE;
+                    var message = egret.sys.tr(4500, "showAll", "fixedWidth");
+                    console.warn(message);
+                }
+                option.frameRate = options.frameRate || 30;
+                option.contentWidth = options.contentWidth || 640;
+                option.contentHeight = options.contentHeight || 1136;
+                option.orientation = options.orientation || egret.OrientationMode.AUTO;
+                option.maxTouches = options.maxTouches;
+                option.textureScaleFactor = 1;
+                option.showFPS = options.showFPS;
+                var styleStr = options.fpsStyles || "x:0,y:0,size:12,textColor:0xffffff,bgAlpha:0.9";
+                var stylesArr = styleStr.split(",");
+                var styles = {};
+                for (var i = 0; i < stylesArr.length; i++) {
+                    var tempStyleArr = stylesArr[i].split(":");
+                    styles[tempStyleArr[0]] = tempStyleArr[1];
+                }
+                option.fpsStyles = styles;
+                option.showLog = false;
+                option.logFilter = "";
+                return option;
             };
             /**
              * @private
-             * @param functionName
-             * @param listener
+             * 添加canvas到container。
              */
-            WebExternalInterface.addCallback = function (functionName, listener) {
+            WebPlayer.prototype.attachCanvas = function (container, canvas) {
+                // let style = canvas.style;
+                // style.cursor = "inherit";
+                // style.position = "absolute";
+                // style.top = "0";
+                // style.bottom = "0";
+                // style.left = "0";
+                // style.right = "0";
+                // container.appendChild(canvas);
+                // style = container.style;
+                // style.overflow = "hidden";
+                // style.position = "absolute";
             };
-            return WebExternalInterface;
-        }());
-        qgame.WebExternalInterface = WebExternalInterface;
-        __reflect(WebExternalInterface.prototype, "egret.qgame.WebExternalInterface", ["egret.ExternalInterface"]);
-        egret.ExternalInterface = WebExternalInterface;
+            /**
+             * @private
+             * 更新播放器视口尺寸
+             */
+            WebPlayer.prototype.updateScreenSize = function () {
+                var canvas = this.canvas;
+                if (canvas['userTyping'])
+                    return;
+                var option = this.playerOption;
+                var deviceInfo = system.device.getInfoSync();
+                var boundingClientWidth = window.innerWidth;
+                var boundingClientHeight = window.innerHeight;
+                var shouldRotate = false;
+                var orientation = this.stage.$orientation;
+                if (orientation != egret.OrientationMode.AUTO) {
+                    shouldRotate = orientation != egret.OrientationMode.PORTRAIT && boundingClientHeight > boundingClientWidth
+                        || orientation == egret.OrientationMode.PORTRAIT && boundingClientWidth > boundingClientHeight;
+                }
+                var screenWidth = shouldRotate ? boundingClientHeight : boundingClientWidth;
+                var screenHeight = shouldRotate ? boundingClientWidth : boundingClientHeight;
+                egret.Capabilities["boundingClientWidth" + ""] = screenWidth;
+                egret.Capabilities["boundingClientHeight" + ""] = screenHeight;
+                var stageSize = egret.sys.screenAdapter.calculateStageSize(this.stage.$scaleMode, screenWidth, screenHeight, option.contentWidth, option.contentHeight);
+                var stageWidth = stageSize.stageWidth;
+                var stageHeight = stageSize.stageHeight;
+                var displayWidth = stageSize.displayWidth;
+                var displayHeight = stageSize.displayHeight;
+                // canvas.style[getPrefixStyleName("transformOrigin")] = "0% 0% 0px";
+                if (canvas.width != stageWidth) {
+                    canvas.width = stageWidth;
+                }
+                if (canvas.height != stageHeight) {
+                    canvas.height = stageHeight;
+                }
+                var rotation = 0;
+                var scalex = displayWidth / stageWidth, scaley = displayHeight / stageHeight;
+                var canvasScaleX = scalex * egret.sys.DisplayList.$canvasScaleFactor;
+                var canvasScaleY = scaley * egret.sys.DisplayList.$canvasScaleFactor;
+                var m = new egret.Matrix();
+                m.scale(scalex / canvasScaleX, scaley / canvasScaleY);
+                m.rotate(rotation * Math.PI / 180);
+                var transform = "matrix(" + m.a + "," + m.b + "," + m.c + "," + m.d + "," + m.tx + "," + m.ty + ")";
+                // canvas.style[getPrefixStyleName("transform")] = transform;
+                egret.sys.DisplayList.$setCanvasScale(canvasScaleX, canvasScaleY);
+                this.webTouchHandler.updateScaleMode(scalex, scaley, rotation);
+                this.player.updateStageSize(stageWidth, stageHeight); //不要在这个方法后面修改属性
+            };
+            WebPlayer.prototype.setContentSize = function (width, height) {
+                var option = this.playerOption;
+                option.contentWidth = width;
+                option.contentHeight = height;
+                this.updateScreenSize();
+            };
+            /**
+             * @private
+             * 更新触摸数量
+             */
+            WebPlayer.prototype.updateMaxTouches = function () {
+                this.webTouchHandler.$updateMaxTouches();
+            };
+            return WebPlayer;
+        }(egret.HashObject));
+        qgame.WebPlayer = WebPlayer;
+        __reflect(WebPlayer.prototype, "egret.qgame.WebPlayer", ["egret.sys.Screen"]);
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 //////////////////////////////////////////////////////////////////////////////////////
@@ -3351,132 +2952,31 @@ egret.Capabilities["runtimeType" + ""] = "qgame";
 (function (egret) {
     var qgame;
     (function (qgame) {
-        var sharedCanvas;
-        var sharedContext;
         /**
          * @private
          */
-        function convertImageToCanvas(texture, rect) {
-            if (!sharedCanvas) {
-                sharedCanvas = document.createElement("canvas");
-                sharedContext = sharedCanvas.getContext("2d");
+        var WebExternalInterface = (function () {
+            function WebExternalInterface() {
             }
-            var w = texture.$getTextureWidth();
-            var h = texture.$getTextureHeight();
-            if (rect == null) {
-                rect = egret.$TempRectangle;
-                rect.x = 0;
-                rect.y = 0;
-                rect.width = w;
-                rect.height = h;
-            }
-            rect.x = Math.min(rect.x, w - 1);
-            rect.y = Math.min(rect.y, h - 1);
-            rect.width = Math.min(rect.width, w - rect.x);
-            rect.height = Math.min(rect.height, h - rect.y);
-            var iWidth = Math.floor(rect.width);
-            var iHeight = Math.floor(rect.height);
-            var surface = sharedCanvas;
-            surface["style"]["width"] = iWidth + "px";
-            surface["style"]["height"] = iHeight + "px";
-            sharedCanvas.width = iWidth;
-            sharedCanvas.height = iHeight;
-            if (egret.Capabilities.renderMode == "webgl") {
-                var renderTexture = void 0;
-                //webgl下非RenderTexture纹理先画到RenderTexture
-                if (!texture.$renderBuffer) {
-                    renderTexture = new egret.RenderTexture();
-                    renderTexture.drawToTexture(new egret.Bitmap(texture));
-                }
-                else {
-                    renderTexture = texture;
-                }
-                //从RenderTexture中读取像素数据，填入canvas
-                var pixels = renderTexture.$renderBuffer.getPixels(rect.x, rect.y, iWidth, iHeight);
-                var x = 0;
-                var y = 0;
-                for (var i = 0; i < pixels.length; i += 4) {
-                    sharedContext.fillStyle =
-                        'rgba(' + pixels[i]
-                            + ',' + pixels[i + 1]
-                            + ',' + pixels[i + 2]
-                            + ',' + (pixels[i + 3] / 255) + ')';
-                    sharedContext.fillRect(x, y, 1, 1);
-                    x++;
-                    if (x == iWidth) {
-                        x = 0;
-                        y++;
-                    }
-                }
-                if (!texture.$renderBuffer) {
-                    renderTexture.dispose();
-                }
-                return surface;
-            }
-            else {
-                var bitmapData = texture;
-                var offsetX = Math.round(bitmapData.$offsetX);
-                var offsetY = Math.round(bitmapData.$offsetY);
-                var bitmapWidth = bitmapData.$bitmapWidth;
-                var bitmapHeight = bitmapData.$bitmapHeight;
-                sharedContext.drawImage(bitmapData.$bitmapData.source, bitmapData.$bitmapX + rect.x / egret.$TextureScaleFactor, bitmapData.$bitmapY + rect.y / egret.$TextureScaleFactor, bitmapWidth * rect.width / w, bitmapHeight * rect.height / h, offsetX, offsetY, rect.width, rect.height);
-                return surface;
-            }
-        }
-        /**
-         * @private
-         */
-        function toDataURL(type, rect, encoderOptions) {
-            try {
-                var surface = convertImageToCanvas(this, rect);
-                var result = surface.toDataURL(type, encoderOptions);
-                return result;
-            }
-            catch (e) {
-                egret.$error(1033);
-            }
-            return null;
-        }
-        /**
-         * 有些杀毒软件认为 saveToFile 可能是一个病毒文件
-         */
-        function eliFoTevas(type, filePath, rect, encoderOptions) {
-        }
-        function getPixel32(x, y) {
-            egret.$warn(1041, "getPixel32", "getPixels");
-            return this.getPixels(x, y);
-        }
-        function getPixels(x, y, width, height) {
-            if (width === void 0) { width = 1; }
-            if (height === void 0) { height = 1; }
-            //webgl环境下不需要转换成canvas获取像素信息
-            if (egret.Capabilities.renderMode == "webgl") {
-                var renderTexture = void 0;
-                //webgl下非RenderTexture纹理先画到RenderTexture
-                if (!this.$renderBuffer) {
-                    renderTexture = new egret.RenderTexture();
-                    renderTexture.drawToTexture(new egret.Bitmap(this));
-                }
-                else {
-                    renderTexture = this;
-                }
-                //从RenderTexture中读取像素数据
-                var pixels = renderTexture.$renderBuffer.getPixels(x, y, width, height);
-                return pixels;
-            }
-            try {
-                var surface = convertImageToCanvas(this);
-                var result = sharedContext.getImageData(x, y, width, height).data;
-                return result;
-            }
-            catch (e) {
-                egret.$error(1039);
-            }
-        }
-        egret.Texture.prototype.toDataURL = toDataURL;
-        egret.Texture.prototype.saveToFile = eliFoTevas;
-        egret.Texture.prototype.getPixel32 = getPixel32;
-        egret.Texture.prototype.getPixels = getPixels;
+            /**
+             * @private
+             * @param functionName
+             * @param value
+             */
+            WebExternalInterface.call = function (functionName, value) {
+            };
+            /**
+             * @private
+             * @param functionName
+             * @param listener
+             */
+            WebExternalInterface.addCallback = function (functionName, listener) {
+            };
+            return WebExternalInterface;
+        }());
+        qgame.WebExternalInterface = WebExternalInterface;
+        __reflect(WebExternalInterface.prototype, "egret.qgame.WebExternalInterface", ["egret.ExternalInterface"]);
+        egret.ExternalInterface = WebExternalInterface;
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 //////////////////////////////////////////////////////////////////////////////////////

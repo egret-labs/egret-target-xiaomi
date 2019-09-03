@@ -89,9 +89,9 @@ namespace egret.qgame {
             if (this.$loops > 0) {
                 this.$loops--;
             }
-
-            /////////////
-            //this.audio.load();
+            
+            this.audio.offEnded(this.onPlayEnd.bind(this))
+            this.audio.stop();
             this.$play();
         };
 
@@ -110,11 +110,7 @@ namespace egret.qgame {
 
             let audio = this.audio;
             audio.offEnded(this.onPlayEnd.bind(this))
-
-            audio.volume = 0;
-            this._volume = 0;
-            this.audio = null;
-            audio.pause();
+            audio.stop();
         }
 
         /**
