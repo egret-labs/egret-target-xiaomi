@@ -1,9 +1,10 @@
-declare class qg {
-    /**同步获取系统信息 */
-    static getSystemInfoSync(): qg.ISysInfo;
-    static createInnerAudioContext():qg.InnerAudioContext;
-}
 declare namespace qg {
+     /**同步获取系统信息 */
+    function getSystemInfoSync(): qg.ISysInfo;
+    /** 创建音频 */
+    function createInnerAudioContext():qg.InnerAudioContext;
+
+
     interface ISysInfo {
         language: string;
         system: string;
