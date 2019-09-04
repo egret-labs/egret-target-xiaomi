@@ -512,7 +512,6 @@ r.prototype = e.prototype, t.prototype = new r();
                     if (_this.$loops > 0) {
                         _this.$loops--;
                     }
-                    _this.audio.offEnded(_this.onPlayEnd.bind(_this));
                     _this.audio.stop();
                     _this.$play();
                 };
@@ -521,6 +520,7 @@ r.prototype = e.prototype, t.prototype = new r();
                  */
                 _this._volume = 1;
                 _this.audio = audio;
+                _this.audio.onEnded(_this.onPlayEnd.bind(_this));
                 return _this;
             }
             HtmlSoundChannel.prototype.$play = function () {
@@ -529,9 +529,8 @@ r.prototype = e.prototype, t.prototype = new r();
                     return;
                 }
                 this.audio.play();
-                this.audio.onEnded(this.onPlayEnd.bind(this));
-                this.audio.volume = this._volume;
                 this.audio.seek(this.$startTime);
+                this.audio.volume = this._volume;
             };
             /**
              * @private

@@ -62,6 +62,7 @@ namespace egret.qgame {
         constructor(audio: qg.InnerAudioContext) {
             super();
             this.audio = audio;
+            this.audio.onEnded(this.onPlayEnd.bind(this))
         }
 
         $play(): void {
@@ -70,9 +71,8 @@ namespace egret.qgame {
                 return;
             }
             this.audio.play();
-            this.audio.onEnded(this.onPlayEnd.bind(this))
-            this.audio.volume = this._volume;
             this.audio.seek(this.$startTime);
+            this.audio.volume = this._volume;
         }
 
         /**
@@ -89,8 +89,6 @@ namespace egret.qgame {
             if (this.$loops > 0) {
                 this.$loops--;
             }
-            
-            this.audio.offEnded(this.onPlayEnd.bind(this))
             this.audio.stop();
             this.$play();
         };
