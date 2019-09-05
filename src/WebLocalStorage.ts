@@ -34,8 +34,7 @@ namespace egret.localStorage.qgame {
      * @returns 
      */
     function getItem(key:string):string {
-        return system.storage.getSync({key:key})
-        // return window.localStorage.getItem(key);
+        return window.localStorage.getItem(key);
     }
 
     /**
@@ -46,30 +45,14 @@ namespace egret.localStorage.qgame {
      * @returns 
      */
     function setItem(key:string, value:string):boolean {
-        let result = system.storage.setSync({
-            key:key,
-            value:value,
-            success:function(data){
-                value = data;
-            },
-            fail:function(data,code){
-                egret.$warn(1047, key, value);
-            }
-        })
-        if (result == "success"){
+        try{
+            window.localStorage.setItem(key, value);
             return true;
-        }else{
+        }
+        catch(e){
             egret.$warn(1047, key, value);
             return false;
         }
-        // try{
-        //     window.localStorage.setItem(key, value);
-        //     return true;
-        // }
-        // catch(e){
-        //     egret.$warn(1047, key, value);
-        //     return false;
-        // }
     }
 
     /**
@@ -78,8 +61,7 @@ namespace egret.localStorage.qgame {
      * @param key 
      */
     function removeItem(key:string):void {        
-        system.storage.deleteSync({ key:key})
-        // window.localStorage.removeItem(key);
+        window.localStorage.removeItem(key);
     }
 
     /**
@@ -87,8 +69,7 @@ namespace egret.localStorage.qgame {
      * 
      */
     function clear():void {
-        // window.localStorage.clear();
-        system.storage.clearSync()
+        window.localStorage.clear();
     }
 
     localStorage.getItem = getItem;

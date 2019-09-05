@@ -29,10 +29,10 @@ class ImageProcessor {
             } else {
                 //通过缓存机制加载
                 const fullname = path.getLocalFilePath(imageSrc);
-                return fs.existsSync(fullname).then(() => {
+                if (fs.existsSync(fullname)) {
                     //本地有缓存
                     return loadImage(path.getMIUserPath(fullname))
-                }, () => {
+                } else {
                     //本地没有缓存,下载
                     return fs.downloadFile(imageSrc, fullname).then(() => {
                         //下载完成，再从缓存里读取
@@ -40,7 +40,7 @@ class ImageProcessor {
                     }, () => {
                         return;
                     })
-                })
+                }
             }
 
         } else {
@@ -61,6 +61,8 @@ function loadImage(imageURL, scale9grid) {
     return new Promise((resolve, reject) => {
         let image = new Image();
         image.onload = function (event) {
+            image.onerror = null;
+            image.onload = null;
             const bitmapdata = new egret.BitmapData(image);
             const texture = new egret.Texture();
             texture._setBitmapData(bitmapdata);

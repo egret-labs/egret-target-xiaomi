@@ -48,6 +48,7 @@ namespace egret.qgame {
             stage.$orientation = option.orientation;
             stage.$maxTouches = option.maxTouches;
             stage.frameRate = option.frameRate;
+            qg.setPreferredFramesPerSecond(stage.frameRate);
             stage.textureScaleFactor = option.textureScaleFactor;
 
             let buffer = new sys.RenderBuffer(undefined, undefined, true);
@@ -172,7 +173,6 @@ namespace egret.qgame {
             if (canvas['userTyping'])
                 return;
             let option = this.playerOption;
-            let deviceInfo = system.device.getInfoSync()
 
             let boundingClientWidth = window.innerWidth;
             let boundingClientHeight = window.innerHeight;

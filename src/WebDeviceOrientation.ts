@@ -10,10 +10,8 @@ namespace egret.qgame {
          * 
          */
         start() {
-            // window.addEventListener("deviceorientation", this.onChange);
-            system.sensor.subscribeAccelerometer({
-                callback:this.onChange.bind(this)
-            })
+            qg.onCompassChange(this.onChange.bind(this))
+            qg.startCompass();
         }
 
         /**
@@ -21,8 +19,7 @@ namespace egret.qgame {
          * 
          */
         stop() {
-            // window.removeEventListener("deviceorientation", this.onChange);
-            system.sensor.unsubscribeAccelerometer();
+            qg.stopCompass();
         }
 
         /**
@@ -30,9 +27,9 @@ namespace egret.qgame {
          */
         protected onChange = (e: any) => {
             let event = new OrientationEvent(Event.CHANGE);
-            event.beta = e.x;
-            event.gamma = e.y;
-            event.alpha = e.z;
+            event.beta = 0;
+            event.gamma = 0;
+            event.alpha = e.direction;
             this.dispatchEvent(event);
         }
     }

@@ -71,7 +71,7 @@ namespace egret.qgame {
     * 覆盖掉系统的 createCanvas
     */
     function mainCanvas(width?: number, height?: number): HTMLCanvasElement {
-        return getCurrentPage().getCanvas();
+        return document.getElementById('canvas') as HTMLCanvasElement;            
     }
     egret.sys.mainCanvas = mainCanvas;
 
@@ -222,7 +222,7 @@ namespace egret.qgame {
      */
     function createCanvasRenderBufferSurface(defaultFunc: (width?: number, height?: number) => HTMLCanvasElement, width?: number, height?: number, root?: boolean): HTMLCanvasElement {
         if (root) {
-            return getCurrentPage().getCanvas();
+            return document.createElement("canvas");
         }
         else {
             return defaultFunc(width, height);

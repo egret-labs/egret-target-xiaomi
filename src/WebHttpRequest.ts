@@ -252,29 +252,31 @@ namespace egret.qgame {
                 self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
             };
 
-            // const fs = wx.getFileSystemManager();
+            const fs = qg.getFileSystemManager();
             const url = "/" + self._url;
             if (self.responseType == "arraybuffer") {
-                //qgame默认utf8编码
-                system.file.readArrayBuffer({
-                    uri: url,
-                    success(buffer) {
-                        onSuccessFunc(buffer.buffer);
+                //不传 encoding 默认返回二进制格式，传了 encoding:binary 反而返回 string 格式
+                fs.readFile({
+                    filePath: url,
+                    success({ data }) {
+                        onSuccessFunc(data);
                     },
-                    fail(data, code) {
-                        //code 有三种错误码 202参数错误，300I/O错误，301文件不存在
+                    fail() {
                         onErrorFunc();
                     }
                 })
             }
             else {
-                system.file.readText({
-                    uri: url,
-                    success(data) {
-                        onSuccessFunc(data.text);
+                fs.readFile({
+                    filePath: url,
+                    encoding: 'utf8',
+                    success({ data }) {
+                        if (self.responseType == "json") {
+                            data = JSON.parse(data);
+                        }
+                        onSuccessFunc(data);
                     },
-                    fail(code) {
-                        //code 有三种错误码 202参数错误，300I/O错误，301文件不存在
+                    fail() {
                         onErrorFunc();
                     }
                 })

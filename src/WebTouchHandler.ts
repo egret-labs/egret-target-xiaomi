@@ -39,7 +39,7 @@ namespace egret.qgame {
          */
         public constructor(stage: egret.Stage, canvas: HTMLCanvasElement) {
             super();
-            this.canvas = getCurrentPage().getCanvas();
+            this.canvas = document.getElementById('canvas') as HTMLCanvasElement;
             this.touch = new egret.sys.TouchHandler(stage);
             this.addTouchListener();
         }

@@ -1,4 +1,4 @@
-const system = require("@system");var __reflect = (this && this.__reflect) || function (p, c, t) {
+var __reflect = (this && this.__reflect) || function (p, c, t) {
     p.__class__ = c, t ? t.push(c) : t = [c], p.__types__ = p.__types__ ? t.concat(p.__types__) : t;
 };
 var __extends = this && this.__extends || function __extends(t, e) { 
@@ -1367,29 +1367,33 @@ r.prototype = e.prototype, t.prototype = new r();
                 var onErrorFunc = function () {
                     self.dispatchEventWith(egret.IOErrorEvent.IO_ERROR);
                 };
-                // const fs = wx.getFileSystemManager();
+                var fs = qg.getFileSystemManager();
                 var url = "/" + self._url;
                 if (self.responseType == "arraybuffer") {
-                    //qgame默认utf8编码
-                    system.file.readArrayBuffer({
-                        uri: url,
-                        success: function (buffer) {
-                            onSuccessFunc(buffer.buffer);
+                    //不传 encoding 默认返回二进制格式，传了 encoding:binary 反而返回 string 格式
+                    fs.readFile({
+                        filePath: url,
+                        success: function (_a) {
+                            var data = _a.data;
+                            onSuccessFunc(data);
                         },
-                        fail: function (data, code) {
-                            //code 有三种错误码 202参数错误，300I/O错误，301文件不存在
+                        fail: function () {
                             onErrorFunc();
                         }
                     });
                 }
                 else {
-                    system.file.readText({
-                        uri: url,
-                        success: function (data) {
-                            onSuccessFunc(data.text);
+                    fs.readFile({
+                        filePath: url,
+                        encoding: 'utf8',
+                        success: function (_a) {
+                            var data = _a.data;
+                            if (self.responseType == "json") {
+                                data = JSON.parse(data);
+                            }
+                            onSuccessFunc(data);
                         },
-                        fail: function (code) {
-                            //code 有三种错误码 202参数错误，300I/O错误，301文件不存在
+                        fail: function () {
                             onErrorFunc();
                         }
                     });
@@ -1675,10 +1679,10 @@ r.prototype = e.prototype, t.prototype = new r();
                 if (this.$textfield.maxChars) {
                     info.maxLength = this.$textfield.maxChars;
                 }
-                system.keyboard.show(info);
-                system.keyboard.onenterclick = this.onKeyboardComplete.bind(this);
-                system.keyboard.oncomplete = this.onKeyboardComplete.bind(this);
-                system.keyboard.oninput = this.onKeyboardInput.bind(this);
+                qg.showKeyboard(info);
+                qg.onKeyboardConfirm(this.onKeyboardComplete);
+                qg.onKeyboardComplete(this.onKeyboardComplete);
+                qg.onKeyboardInput(this.onKeyboardInput);
                 this.dispatchEvent(new egret.Event("focus"));
             };
             HTML5StageText.prototype.onKeyboardInput = function (data) {
@@ -1693,10 +1697,10 @@ r.prototype = e.prototype, t.prototype = new r();
              * @private
              */
             HTML5StageText.prototype.$hide = function () {
-                system.keyboard.oncomplete = null;
-                system.keyboard.onenterclick = null;
-                system.keyboard.oninput = null;
-                system.keyboard.hide();
+                qg.offKeyboardComplete(this.onKeyboardComplete);
+                qg.offKeyboardConfirm(this.onKeyboardComplete);
+                qg.offKeyboardInput(this.onKeyboardInput);
+                qg.hideKeyboard();
                 this.dispatchEvent(new egret.Event("blur"));
             };
             /**
@@ -2038,7 +2042,7 @@ r.prototype = e.prototype, t.prototype = new r();
                  * @private
                  */
                 _this.rotation = 0;
-                _this.canvas = getCurrentPage().getCanvas();
+                _this.canvas = document.getElementById('canvas');
                 _this.touch = new egret.sys.TouchHandler(stage);
                 _this.addTouchListener();
                 return _this;
@@ -2191,18 +2195,22 @@ r.prototype = e.prototype, t.prototype = new r();
          * @private
          */
         qgame.WebLifeCycleHandler = function (context) {
-            getCurrentPage().onShow = function () {
-                if (!isShow) {
-                    context.resume();
-                    isShow = true;
-                }
-            };
-            getCurrentPage().onHide = function () {
-                if (isShow) {
-                    context.pause();
-                    isShow = false;
-                }
-            };
+            if (qg.onShow) {
+                qg.onShow(function () {
+                    if (!isShow) {
+                        context.resume();
+                        isShow = true;
+                    }
+                });
+            }
+            if (qg.onHide) {
+                qg.onHide(function () {
+                    if (isShow) {
+                        context.pause();
+                        isShow = false;
+                    }
+                });
+            }
         };
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
@@ -2776,6 +2784,7 @@ egret.Capabilities["runtimeType" + ""] = "qgame";
                 stage.$orientation = option.orientation;
                 stage.$maxTouches = option.maxTouches;
                 stage.frameRate = option.frameRate;
+                qg.setPreferredFramesPerSecond(stage.frameRate);
                 stage.textureScaleFactor = option.textureScaleFactor;
                 var buffer = new egret.sys.RenderBuffer(undefined, undefined, true);
                 var canvas = buffer.surface;
@@ -2862,7 +2871,6 @@ egret.Capabilities["runtimeType" + ""] = "qgame";
                 if (canvas['userTyping'])
                     return;
                 var option = this.playerOption;
-                var deviceInfo = system.device.getInfoSync();
                 var boundingClientWidth = window.innerWidth;
                 var boundingClientHeight = window.innerHeight;
                 var shouldRotate = false;
@@ -3162,9 +3170,9 @@ egret.Capabilities["runtimeType" + ""] = "qgame";
                  */
                 _this.onChange = function (e) {
                     var event = new egret.OrientationEvent(egret.Event.CHANGE);
-                    event.beta = e.x;
-                    event.gamma = e.y;
-                    event.alpha = e.z;
+                    event.beta = 0;
+                    event.gamma = 0;
+                    event.alpha = e.direction;
                     _this.dispatchEvent(event);
                 };
                 return _this;
@@ -3174,18 +3182,15 @@ egret.Capabilities["runtimeType" + ""] = "qgame";
              *
              */
             WebDeviceOrientation.prototype.start = function () {
-                // window.addEventListener("deviceorientation", this.onChange);
-                system.sensor.subscribeAccelerometer({
-                    callback: this.onChange.bind(this)
-                });
+                qg.onCompassChange(this.onChange.bind(this));
+                qg.startCompass();
             };
             /**
              * @private
              *
              */
             WebDeviceOrientation.prototype.stop = function () {
-                // window.removeEventListener("deviceorientation", this.onChange);
-                system.sensor.unsubscribeAccelerometer();
+                qg.stopCompass();
             };
             return WebDeviceOrientation;
         }(egret.EventDispatcher));
@@ -3424,8 +3429,7 @@ if (window['HTMLVideoElement'] == undefined) {
              * @returns
              */
             function getItem(key) {
-                return system.storage.getSync({ key: key });
-                // return window.localStorage.getItem(key);
+                return window.localStorage.getItem(key);
             }
             /**
              * @private
@@ -3435,31 +3439,14 @@ if (window['HTMLVideoElement'] == undefined) {
              * @returns
              */
             function setItem(key, value) {
-                var result = system.storage.setSync({
-                    key: key,
-                    value: value,
-                    success: function (data) {
-                        value = data;
-                    },
-                    fail: function (data, code) {
-                        egret.$warn(1047, key, value);
-                    }
-                });
-                if (result == "success") {
+                try {
+                    window.localStorage.setItem(key, value);
                     return true;
                 }
-                else {
+                catch (e) {
                     egret.$warn(1047, key, value);
                     return false;
                 }
-                // try{
-                //     window.localStorage.setItem(key, value);
-                //     return true;
-                // }
-                // catch(e){
-                //     egret.$warn(1047, key, value);
-                //     return false;
-                // }
             }
             /**
              * @private
@@ -3467,16 +3454,14 @@ if (window['HTMLVideoElement'] == undefined) {
              * @param key
              */
             function removeItem(key) {
-                system.storage.deleteSync({ key: key });
-                // window.localStorage.removeItem(key);
+                window.localStorage.removeItem(key);
             }
             /**
              * @private
              *
              */
             function clear() {
-                // window.localStorage.clear();
-                system.storage.clearSync();
+                window.localStorage.clear();
             }
             localStorage.getItem = getItem;
             localStorage.setItem = setItem;
@@ -8271,7 +8256,7 @@ if (window['HTMLVideoElement'] == undefined) {
         * 覆盖掉系统的 createCanvas
         */
         function mainCanvas(width, height) {
-            return getCurrentPage().getCanvas();
+            return document.getElementById('canvas');
         }
         egret.sys.mainCanvas = mainCanvas;
         function createCanvas(width, height) {
@@ -8413,7 +8398,7 @@ if (window['HTMLVideoElement'] == undefined) {
          */
         function createCanvasRenderBufferSurface(defaultFunc, width, height, root) {
             if (root) {
-                return getCurrentPage().getCanvas();
+                return document.createElement("canvas");
             }
             else {
                 return defaultFunc(width, height);

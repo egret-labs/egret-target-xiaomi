@@ -22,7 +22,6 @@ var exe = cp.exec("egret build", function () {
     var jsPath = "./target/template/egret.qgame.js";
     var content = fs.readFileSync(jsPath, { encoding });
     content = content.replace(/var egret;/gi, "");
-    content = 'const system = require("@system");'+content;
     var key = "qgame.version = \"";
     var index = content.indexOf(key);
     content = content.slice(0, index + key.length) + version + content.slice(index + key.length + 5);

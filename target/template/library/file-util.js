@@ -1,121 +1,117 @@
 /**
  * 小米快游戏的文件系统
  */
-const system = require('@system');
+export const xiaomiFS = qg.getFileSystemManager();
 const MI_ROOT = "internal://files/";
 let fs_cache = {};
 
 function walkFile(dirname, callback) {
-    let result = system.file.statSync({
-        uri: dirname,
-        recursive: true
-    })
-    let files = result.subFiles;
-    for (var i = 0, len = files.length; i < len; i++) {
-        let file = files[i];
-        if (file.type == 'dir') {
-            walkFile(file.uri, callback)
-        } else {
-            callback(file.uri)
+    const files = xiaomiFS.readdirSync(dirname)
+    var pending = files.length;
+    if (!--pending) callback();
+    for (let f of files) {
+        const file = dirname + '/' + f;
+        let p = file.replace(MI_ROOT, "");
+        if (fs_cache[p]) {
+            fs_cache[p] = 0;
         }
+        xiaomiFS.stat({
+            path: file,
+            success: function (res) {
+                if (res.stat.isDirectory()) {
+                    walkFile(file, () => {
+                        if (!--pending) callback();
+                    })
+                } else {
+                    if (!--pending) callback();
+                }
+            }
+        })
     }
 }
 
 function walkDir(dirname, callback) {
-    let result = system.file.statSync({
-        uri: dirname,
-        recursive: true
-    })
-    let files = result.subFiles;
-    for (var i = 0, len = files.length; i < len; i++) {
-        let file = files[i];
-        if (file.type == 'dir') {
-            walkDir(file.uri, callback)
-            callback(file.uri)
+    const files = xiaomiFS.readdirSync(dirname)
+    var pending = files.length;
+    if (!--pending) callback();
+    for (let f of files) {
+        const file = dirname + '/' + f;
+        let p = file.replace(MI_ROOT, "");
+        if (fs_cache[p]) {
+            fs_cache[p] = 0;
         }
+        xiaomiFS.stat({
+            path: file,
+            success: function (res) {
+                if (res.stat.isDirectory()) {
+                    walkDir(file, () => {
+                        if (!--pending) callback();
+                    })
+                }
+            }
+        })
     }
 }
 export const fs = {
     /**
      * 遍历删除文件夹
      */
-    remove: (dirname) => {
+    remove: (dirname) => {  
         let fullPath = MI_ROOT + path.getLocalFilePath(dirname);
-        let result = system.file.statSync({
-            uri: fullPath
+        xiaomiFS.stat({
+            path: fullPath,
+            success: function (res) {
+                let p = fullPath.replace(MI_ROOT, "");
+                if (fs_cache[p]) {
+                    fs_cache[p] = 0;
+                }
+                if (res.stat.isDirectory()) {
+                    walkFile(fullPath, () => {
+                        xiaomiFS.rmdirSync(fullPath, true)
+                    });
+                } else {
+                    xiaomiFS.unlinkSync(fullPath)
+                }
+            },
+            fail: function () {
+                //file not exist
+            }
         })
-        if (result.type == 'dir') {
-            //遍历删除文件
-            walkFile(fullPath, (file) => {
-                system.file.delete({
-                    uri: file
-                })
-                if (fs_cache[file]) {
-                    fs_cache[file] = 0;
-                }
-            })
-            //遍历删除文件夹
-            walkDir(fullPath, (dir) => {
-                let res = system.file.rmdir({
-                    uri: dir
-                })
-                if (fs_cache[dir]) {
-                    fs_cache[dir] = 0;
-                }
-            })
-        }
     },
     /**
      * 检查文件是否存在
      */
     existsSync: (p) => {
-        return new Promise((resolve, reject) => {
-            const cache = fs_cache[p];
-            if (cache == 0) {
-                reject();
-            } else if (cache == 1) {
-                resolve();
-            } else {
-                p = MI_ROOT + path.normailze(p);
-                getFile(p).then(function succ() {
-                    //本地文件存在
+        let cache = fs_cache[p];
+        if (cache == 0) {
+            return false
+        } else if (cache == 1) {
+            return true;
+        } else {
+            p = path.normailze(p);
+            try {
+                let reuslt = xiaomiFS.accessSync(MI_ROOT + p);
+                if(reuslt.indexOf("content=success") >= 0){  
                     fs_cache[p] = 1;
-                    resolve();
-                }, function fail() {
-                    //本地文件不存在
+                    return true;
+                } else {
                     fs_cache[p] = 0;
-                    reject();
-                })
+                    return false;
+                }
+            } catch (e) {
+                fs_cache[p] = 0;
+                return false;
             }
-        })
-
+        }
     },
     downloadFile: (src, target) => {
         return new Promise((resolve, reject) => {
-            //1.下载
-            system.request.download({
+            qg.downloadFile({
                 url: src,
                 success: function (data) {
-                    //2.监听下载完成
-                    system.request.onDownloadComplete({
-                        token: data.token,
-                        success: function (data2) {
-                            //3.把下载好的移动到files分区
-                            system.file.move({
-                                srcUri: data2.uri,
-                                dstUri: path.getMIUserPath(target),
-                                success: function (uri) {
-                                    resolve();
-                                },
-                                fail: function (data, code) {
-                                    reject();
-                                }
-                            })
-                        },
-                        fail: function (data2, code) {
-                            reject(data2)
-                        }
-                    })
+                    let tempFilePath = data.tempFilePath;
+                    xiaomiFS.copyFileSync(tempFilePath, path.getMIUserPath(target))
+                    resolve();
                 },
                 fail: function (data, code) {
                     reject(data)
@@ -126,24 +122,6 @@ export const fs = {
     }
 }
 
-function getFile(p) {
-    return new Promise((resolve, reject) => {
-        system.file.get({
-            uri: p,
-            success: function (data) {
-                if (data.type == 'file') {
-                    resolve()
-                } else {
-                    reject()
-                }
-            },
-            fail: function (data, code) {
-                reject()
-            }
-        })
-    })
-
-}
 export const path = {
     dirname: (p) => {
         const arr = p.split("/");

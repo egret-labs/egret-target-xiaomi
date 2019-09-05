@@ -11,8 +11,7 @@ if(window.RES && RES.processor) {
     require('./library/binary.js');
 }
 
-const system = require('@system');
-var info = system.device.getInfoSync();
+var info = qg.getSystemInfoSync();
 const runOptions = {
   //以下为自动修改，请勿修改
   //The following is automatically modified, please do not modify
@@ -31,7 +30,7 @@ const runOptions = {
     audioType: 0,
     renderMode:"webgl",
     calculateCanvasScaleFactor: function (context) {
-        return info.screenDensity;
+        return info.pixelRatio;
     }
 };
 egret.runEgret(runOptions);

@@ -1,7 +1,6 @@
 const fileutil = require('./file-util');
 const path = fileutil.path;
 const fs = fileutil.fs;
-const system = require('@system');
 
 /**
  * 重写的文本加载器，代替引擎默认的文本加载器
@@ -53,11 +52,11 @@ class TextProcessor {
 
 function writeText(targetFilename, content) {
     return new Promise((resolve, reject) => {
-        system.file.writeText({
-            uri: targetFilename,
-            text: content,
+        fileutil.xiaomiFS.writeFile({
+            filePath: targetFilename,
+            data: content,
             success: function () {
-                resolve(content);
+                resolve(content)
             },
             fail: function (data, code) {
                 reject();
@@ -68,12 +67,13 @@ function writeText(targetFilename, content) {
 
 function readLoaclText(targetFilename) {
     return new Promise((resolve, reject) => {
-        system.file.readText({
-            uri: targetFilename,
-            success: function (data) {
-                resolve(data.text)
+        fileutil.xiaomiFS.readFile({
+            filePath: targetFilename,
+            encoding: 'utf8',
+            success: function (res) {
+                resolve(res.data);
             },
-            fail: function (data, code) {
+            fail: function () {
                 reject();
             }
         })

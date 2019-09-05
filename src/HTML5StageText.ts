@@ -86,10 +86,10 @@ namespace egret.qgame {
             if (this.$textfield.maxChars) {
                 info.maxLength = this.$textfield.maxChars;
             }
-            system.keyboard.show(info);
-            system.keyboard.onenterclick = this.onKeyboardComplete.bind(this)
-            system.keyboard.oncomplete = this.onKeyboardComplete.bind(this);
-            system.keyboard.oninput = this.onKeyboardInput.bind(this);
+            qg.showKeyboard(info);
+            qg.onKeyboardConfirm(this.onKeyboardComplete);
+            qg.onKeyboardComplete(this.onKeyboardComplete);
+            qg.onKeyboardInput(this.onKeyboardInput);
 
             this.dispatchEvent(new egret.Event("focus"));
         }
@@ -108,10 +108,10 @@ namespace egret.qgame {
          * @private
          */
         $hide(): void {
-            system.keyboard.oncomplete = null;
-            system.keyboard.onenterclick = null;
-            system.keyboard.oninput = null;
-            system.keyboard.hide();
+            qg.offKeyboardComplete(this.onKeyboardComplete);
+            qg.offKeyboardConfirm(this.onKeyboardComplete);
+            qg.offKeyboardInput(this.onKeyboardInput);
+            qg.hideKeyboard();
             this.dispatchEvent(new egret.Event("blur"));
         }
 

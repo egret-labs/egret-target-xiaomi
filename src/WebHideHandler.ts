@@ -33,17 +33,22 @@ namespace egret.qgame {
      * @private
      */
     export let WebLifeCycleHandler: egret.lifecycle.LifecyclePlugin = (context) => {
-        getCurrentPage().onShow = ()=>{
-            if (!isShow) {
-                context.resume();
-                isShow = true;
-            }
+        if (qg.onShow) {
+            qg.onShow(() => {
+                if (!isShow) {
+                    context.resume();
+                    isShow = true;
+                }
+            });
         }
-        getCurrentPage().onHide = ()=>{
-            if (isShow) {
-                context.pause();
-                isShow = false;
-            }
+
+        if (qg.onHide) {
+            qg.onHide(() => {
+                if (isShow) {
+                    context.pause();
+                    isShow = false;
+                }
+            });
         }
     }
 }
