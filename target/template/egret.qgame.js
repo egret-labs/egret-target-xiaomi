@@ -412,8 +412,10 @@ r.prototype = e.prototype, t.prototype = new r();
              * @inheritDoc
              */
             HtmlSound.prototype.close = function () {
-                if (this.originAudio)
+                if (this.originAudio) {
                     this.originAudio = null;
+                }
+                this.loaded = false;
             };
             /**
              * Background music

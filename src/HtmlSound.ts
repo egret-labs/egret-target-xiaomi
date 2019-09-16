@@ -165,7 +165,10 @@ namespace egret.qgame {
          */
         public close() {
             if (this.originAudio)
+            {
                 this.originAudio = null;
+            }
+            this.loaded = false;
         }
     }
 }
