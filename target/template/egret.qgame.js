@@ -2351,7 +2351,7 @@ r.prototype = e.prototype, t.prototype = new r();
         /**
          * 支持库版本号
          */
-        qgame.version = "0.2.9";
+        qgame.version = "0.2.10";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {
