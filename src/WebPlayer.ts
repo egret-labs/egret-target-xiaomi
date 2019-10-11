@@ -207,11 +207,7 @@ namespace egret.qgame {
                 scaley = displayHeight / stageHeight;
             let canvasScaleX = scalex * sys.DisplayList.$canvasScaleFactor;
             let canvasScaleY = scaley * sys.DisplayList.$canvasScaleFactor;
-            let m = new egret.Matrix();
-            m.scale(scalex / canvasScaleX, scaley / canvasScaleY);
-            m.rotate(rotation * Math.PI / 180);
-            let transform = `matrix(${m.a},${m.b},${m.c},${m.d},${m.tx},${m.ty})`;
-            // canvas.style[getPrefixStyleName("transform")] = transform;
+            
             sys.DisplayList.$setCanvasScale(canvasScaleX, canvasScaleY);
             this.webTouchHandler.updateScaleMode(scalex, scaley, rotation);
             this.player.updateStageSize(stageWidth, stageHeight);//不要在这个方法后面修改属性
