@@ -1,0 +1,24 @@
+{
+	"name": "projectName",
+	"version": "1.0.0",
+	"scripts": {
+		"server": "quickgame server",
+		"build": "quickgame build",
+		"debug": "quickgame debug",
+		"watch": "quickgame watch",
+		"release": "quickgame release"
+	},
+	"dependencies": {
+		"@babel/runtime": "^7.3.4",
+		"chrome-simple-launcher": "0.0.7",
+		"karma-webpack": "^3.0.5",
+		"koa-static": "^5.0.0",
+		"qrcode-terminal": "^0.12.0",
+		"quickgame-cli": "^0.1.18-next.0"
+	},
+	"babel": {
+		"plugins": [
+			"babel-plugin-transform-remove-strict-mode"
+		]
+	}
+}
