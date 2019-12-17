@@ -1,0 +1,19 @@
+{
+	"package": "com.application.demo",
+	"name": "quickgame",
+	"versionName": "1.0.0",
+	"versionCode": "1",
+	"minPlatformVersion": "1050",
+	"icon": "/image/logo.png",
+	"orientation": "portrait",
+	"config": {
+		"logLevel": "log"
+	},
+	"type": "game",
+	"subpackages":[
+		{
+			"name" : "mysubs",
+			"root" : "sub.js"
+		}
+	]
+}

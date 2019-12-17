@@ -1,14 +1,14 @@
 {
-    "name": "projectName",
-    "version": "1.0.0",
-    "scripts": {
-        "server": "quickgame server",
+	"name": "projectName",
+	"version": "1.0.0",
+	"scripts": {
+		"server": "quickgame server",
 		"build": "quickgame build",
 		"debug": "quickgame debug",
 		"watch": "quickgame watch",
 		"release": "quickgame release"
-    },
-    "dependencies": {
+	},
+	"dependencies": {
 		"@babel/runtime": "^7.3.4",
 		"chrome-simple-launcher": "0.0.7",
 		"karma-webpack": "^3.0.5",
