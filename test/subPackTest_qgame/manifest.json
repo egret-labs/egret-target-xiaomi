@@ -9,5 +9,11 @@
 	"config": {
 		"logLevel": "log"
 	},
-	"type": "game"
+	"type": "game",
+	"subpackages":[
+		{
+			"name" : "mysubs",
+			"root" : "sub.js"
+		}
+	]
 }

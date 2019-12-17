@@ -181,7 +181,9 @@ __reflect(LoadingUI.prototype, "LoadingUI", ["RES.PromiseTaskReporter"]);
 var Main = (function (_super) {
     __extends(Main, _super);
     function Main() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.num = 0;
+        return _this;
     }
     Main.prototype.createChildren = function () {
         _super.prototype.createChildren.call(this);
@@ -365,6 +367,8 @@ var Main = (function (_super) {
      * Click the button
      */
     Main.prototype.onButtonClick = function (e) {
+        this.num += 1;
+        window['mylog'](this.num);
         var panel = new eui.Panel();
         panel.title = "Title";
         panel.horizontalCenter = 0;

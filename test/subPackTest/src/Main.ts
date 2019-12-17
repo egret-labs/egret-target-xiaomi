@@ -196,12 +196,14 @@ class Main extends eui.UILayer {
 
         change();
     }
-
+    private num = 0
     /**
      * 点击按钮
      * Click the button
      */
     private onButtonClick(e: egret.TouchEvent) {
+        this.num +=1;
+        window['mylog'](this.num)
         let panel = new eui.Panel();
         panel.title = "Title";
         panel.horizontalCenter = 0;

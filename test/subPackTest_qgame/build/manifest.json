@@ -10,5 +10,11 @@
     "logLevel": "log",
     "debug": true
   },
-  "type": "game"
+  "type": "game",
+  "subpackages": [
+    {
+      "name": "mysubs",
+      "root": "sub.js"
+    }
+  ]
 }
