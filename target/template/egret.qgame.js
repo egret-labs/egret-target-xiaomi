@@ -1451,7 +1451,7 @@ r.prototype = e.prototype, t.prototype = new r();
 (function (egret) {
     var qgame;
     (function (qgame) {
-        qgame.version = "0.2.11";
+        qgame.version = "0.2.12";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {
