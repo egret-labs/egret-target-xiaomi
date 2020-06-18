@@ -68,6 +68,19 @@ namespace egret.qgame {
         if (!options) {
             options = {};
         }
+        // 是否启动3d环境
+        if (options.pro) {
+            egret.pro.egret2dDriveMode = true;
+            try {
+                if (window['startup']) {
+                    window['startup']();
+                } else {
+                    console.error("EgretPro.js don't has function:window.startup");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
         Html5Capatibility.$init();
 
         // WebGL上下文参数自定义

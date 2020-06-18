@@ -197,7 +197,7 @@ namespace egret.qgame {
             if(this.touch.$initMaxTouches){
                 this.touch.$initMaxTouches();
             }else{
-                this.touch['$updateMaxTouches']();
+                this.touch['$updateMaxTouches'](99);
             }
         }
     }

@@ -282,7 +282,15 @@ namespace egret.qgame {
             }
 
             // 为显示对象创建一个新的buffer
-            let displayBuffer = this.createRenderBuffer(displayBoundsWidth, displayBoundsHeight);
+            const scale = Math.max(egret.sys.DisplayList.$canvasScaleFactor, 2);
+            filters.forEach((filter) => {
+                if (filter instanceof GlowFilter) {
+                    filter.$filterScale = scale;
+                }
+            })
+            let displayBuffer = this.createRenderBuffer(scale * displayBoundsWidth, scale * displayBoundsHeight);
+            displayBuffer.saveTransform();
+            displayBuffer.transform(scale, 0, 0, scale, 0, 0);
             displayBuffer.context.pushBuffer(displayBuffer);
 
             //todo 可以优化减少draw次数
@@ -297,6 +305,7 @@ namespace egret.qgame {
             }
 
             displayBuffer.context.popBuffer();
+            displayBuffer.restoreTransform();
 
             //绘制结果到屏幕
             if (drawCalls > 0) {
@@ -913,9 +922,9 @@ namespace egret.qgame {
                         buffer.$offsetY = saveOffsetY + anchorY - (tb.measureHeight + (tb.stroke2 ? tb.canvasHeightOffset : 0)) / 2;
                         page = tb.line.page;
                         buffer.context.drawTexture(page.webGLTexture,
-                            tb.u, tb.v, tb.contentWidth, tb.contentHeight, 
+                            tb.u, tb.v, tb.contentWidth, tb.contentHeight,
                             0, 0, tb.contentWidth, tb.contentHeight,
-                             page.pageWidth, page.pageHeight);
+                            page.pageWidth, page.pageHeight);
 
                         buffer.$offsetX += (tb.contentWidth - tb.canvasWidthOffset);
                     }
@@ -1191,12 +1200,22 @@ namespace egret.qgame {
             let buffer = renderBufferPool.pop();
             if (buffer) {
                 buffer.resize(width, height);
+                buffer.setTransform(1, 0, 0, 1, 0, 0);
             }
             else {
                 buffer = new WebGLRenderBuffer(width, height);
                 buffer.$computeDrawCall = false;
             }
             return buffer;
+        }
+
+
+
+        public renderClear() {
+            const renderContext = WebGLRenderContext.getInstance();
+            const gl = renderContext.context;
+            renderContext.$beforeRender();
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight)
         }
     }
 }
