@@ -1451,7 +1451,7 @@ r.prototype = e.prototype, t.prototype = new r();
 (function (egret) {
     var qgame;
     (function (qgame) {
-        qgame.version = "0.3.0";
+        qgame.version = "0.3.1";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {
@@ -3269,8 +3269,13 @@ if (window['HTMLVideoElement'] == undefined) {
                 }
                 var scale = Math.max(egret.sys.DisplayList.$canvasScaleFactor, 2);
                 filters.forEach(function (filter) {
-                    if (filter instanceof egret.GlowFilter) {
-                        filter.$filterScale = scale;
+                    if (filter instanceof egret.GlowFilter || filter instanceof egret.BlurFilter) {
+                        filter.$uniforms.$filterScale = scale;
+                        if (filter.type == 'blur') {
+                            var blurFilter = filter;
+                            blurFilter.blurXFilter.$uniforms.$filterScale = scale;
+                            blurFilter.blurYFilter.$uniforms.$filterScale = scale;
+                        }
                     }
                 });
                 var displayBuffer = this.createRenderBuffer(scale * displayBoundsWidth, scale * displayBoundsHeight);
@@ -4685,6 +4690,7 @@ if (window['HTMLVideoElement'] == undefined) {
             WebGLRenderContext.prototype.updateTexture = function (texture, bitmapData) {
                 var gl = this.context;
                 gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmapData);
             };
             Object.defineProperty(WebGLRenderContext.prototype, "defaultEmptyTexture", {
@@ -5073,6 +5079,9 @@ if (window['HTMLVideoElement'] == undefined) {
                 var uniforms = program.uniforms;
                 var isCustomFilter = filter && filter.type === "custom";
                 for (var key in uniforms) {
+                    if (key == "$filterScale") {
+                        continue;
+                    }
                     if (key === "projectionVector") {
                         uniforms[key].setValue({ x: this.projectionX, y: this.projectionY });
                     }
@@ -5088,8 +5097,17 @@ if (window['HTMLVideoElement'] == undefined) {
                     else {
                         var value = filter.$uniforms[key];
                         if (value !== undefined) {
-                            if (filter instanceof egret.GlowFilter && (key == "blurX" || key == "blurY" || key == "dist")) {
-                                value = value * filter.$filterScale;
+                            if ((filter.type == "glow" || filter.type.indexOf("blur") == 0)) {
+                                if ((key == "blurX" || key == "blurY" || key == "dist")) {
+                                    value = value * (filter.$uniforms.$filterScale || 1);
+                                }
+                                else if (key == "blur" && value.x != undefined && value.y != undefined) {
+                                    var newValue = { x: 0, y: 0 };
+                                    newValue.x = value.x * (filter.$uniforms.$filterScale != undefined ? filter.$uniforms.$filterScale : 1);
+                                    newValue.y = value.y * (filter.$uniforms.$filterScale != undefined ? filter.$uniforms.$filterScale : 1);
+                                    uniforms[key].setValue(newValue);
+                                    continue;
+                                }
                             }
                             uniforms[key].setValue(value);
                         }
@@ -5198,7 +5216,9 @@ if (window['HTMLVideoElement'] == undefined) {
                     var blurYFilter = filter.blurYFilter;
                     if (blurXFilter.blurX != 0 && blurYFilter.blurY != 0) {
                         temp = qgame.WebGLRenderBuffer.create(width, height);
+                        var scale_1 = Math.max(egret.sys.DisplayList.$canvasScaleFactor, 2);
                         temp.setTransform(1, 0, 0, 1, 0, 0);
+                        temp.transform(scale_1, 0, 0, scale_1, 0, 0);
                         temp.globalAlpha = 1;
                         this.drawToRenderTarget(filter.blurXFilter, input, temp);
                         if (input != originInput) {
