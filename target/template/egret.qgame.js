@@ -1451,7 +1451,7 @@ r.prototype = e.prototype, t.prototype = new r();
 (function (egret) {
     var qgame;
     (function (qgame) {
-        qgame.version = "0.3.1";
+        qgame.version = "0.3.2";
     })(qgame = egret.qgame || (egret.qgame = {}));
 })(egret || (egret = {}));
 (function (egret) {
@@ -4083,7 +4083,9 @@ if (window['HTMLVideoElement'] == undefined) {
                 var renderContext = qgame.WebGLRenderContext.getInstance();
                 var gl = renderContext.context;
                 renderContext.$beforeRender();
-                gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+                var width = renderContext.surface.width;
+                var height = renderContext.surface.height;
+                gl.viewport(0, 0, width, height);
             };
             return WebGLRenderer;
         }());
